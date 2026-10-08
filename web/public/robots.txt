@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /candidate/
+Disallow: /employer/
+Disallow: /admin/
+Disallow: /account/
+Disallow: /notifications
+
+# Khi deploy, đổi thành tên miền thật
+Sitemap: http://localhost:5173/api/sitemap.xml

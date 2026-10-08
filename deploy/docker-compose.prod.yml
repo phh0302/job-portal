@@ -1,0 +1,97 @@
+# Triển khai trên 1 VPS Linux (Ubuntu) bằng Docker.
+#   cp deploy/.env.prod.example deploy/.env.prod   # rồi sửa các giá trị
+#   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
+#
+# Sơ đồ: Internet -> Caddy (80/443, tự cấp HTTPS) -> web (Nginx: file tĩnh + /api) -> api (NestJS) -> sqlserver
+name: jobportal
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: 'Y'
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD}
+      MSSQL_PID: ${MSSQL_PID:-Express}
+      # Giới hạn RAM cho SQL Server để chừa chỗ cho API/web trên VPS nhỏ
+      MSSQL_MEMORY_LIMIT_MB: ${MSSQL_MEMORY_LIMIT_MB:-2048}
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./backups:/var/opt/mssql/backups
+    # Không mở cổng 1433 ra Internet
+    healthcheck:
+      test: ['CMD-SHELL', '/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -b -o /dev/null']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  api:
+    build: ../api
+    restart: unless-stopped
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      TRUST_PROXY: 2 # Caddy + Nginx
+      CORS_ORIGIN: https://${DOMAIN}
+      WEB_URL: https://${DOMAIN}
+      DB_HOST: sqlserver
+      DB_PORT: 1433
+      DB_USERNAME: sa
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE:-job_portal}
+      DB_ENCRYPT: 'false'
+      DB_TRUST_SERVER_CERT: 'true'
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-JobPortal <no-reply@example.com>}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@example.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      # true = tạo sẵn công ty / tin / tài khoản demo (dự án sinh viên, bản trình diễn)
+      SEED_DEMO: ${SEED_DEMO:-false}
+      RUN_MIGRATIONS: 'true'
+      RUN_SEED: ${RUN_SEED:-false}
+      LOG_REQUESTS: 'true'
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-claude-haiku-5-5}
+    volumes:
+      - uploads:/data/uploads
+
+  web:
+    build:
+      context: ../web
+      args:
+        VITE_API_URL: /api
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  sqlserver_data:
+  uploads:
+  caddy_data:
+  caddy_config:

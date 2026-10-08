@@ -1,0 +1,47 @@
+﻿Mã TC,Mã yêu cầu,Module,Tiêu đề,Tiền điều kiện,Dữ liệu test,Các bước,Kết quả mong đợi,Ưu tiên,Loại,Kết quả thực tế,Trạng thái,Người test,Ngày,Mã bug
+TC-AUTH01-001,AUTH-01,Xác thực,Đăng ký ứng viên thành công,Chưa đăng nhập; email chưa tồn tại,Email: qa.uv01@test.local; MK: Qa123456; Vai trò: Ứng viên,"1. Mở /register
+2. Chọn vai trò Ứng viên
+3. Nhập email, mật khẩu, họ tên
+4. Bấm Đăng ký","Tạo tài khoản, đăng nhập vào khu vực ứng viên; email xác minh được gửi (xem terminal API)",P0,Chức năng,,Chưa chạy,,,
+TC-AUTH01-002,AUTH-01,Xác thực,Mật khẩu 7 ký tự bị từ chối,Chưa đăng nhập,MK: Qa12345 (7 ký tự),"1. Mở /register
+2. Nhập dữ liệu, MK 7 ký tự
+3. Bấm Đăng ký","Báo lỗi tại ô mật khẩu (8–64 ký tự, có chữ và số); không tạo tài khoản",P0,Biên,,Chưa chạy,,,
+TC-AUTH01-003,AUTH-01,Xác thực,Mật khẩu 8 ký tự được chấp nhận,Chưa đăng nhập,Email: qa.uv02@test.local; MK: Qa123456 (8 ký tự),"1. Mở /register
+2. Nhập dữ liệu
+3. Bấm Đăng ký",Đăng ký thành công,P0,Biên,,Chưa chạy,,,
+TC-AUTH01-004,AUTH-01,Xác thực,Đăng ký trùng email,Đã có uv1@demo.local,Email: uv1@demo.local,"1. Mở /register
+2. Nhập email đã tồn tại
+3. Bấm Đăng ký",Báo email đã được sử dụng; không tạo tài khoản mới,P0,Validate,,Chưa chạy,,,
+TC-AUTH07-001,AUTH-07,Xác thực,Tài khoản bị khóa bị chặn ngay,uv2 đang đăng nhập ở trình duyệt A,"Lý do khóa: ""QA test khóa""","1. Trình duyệt B: admin khóa uv2 kèm lý do
+2. Trình duyệt A: uv2 mở trang Hồ sơ",uv2 bị đăng xuất / báo tài khoản bị khóa ở request kế tiếp,P0,Bảo mật,,Chưa chạy,,,
+TC-CAN07-001,CAN-07,Ứng viên,Thư giới thiệu đúng 3000 ký tự,"uv1 đăng nhập, có CV, chưa ứng tuyển tin X",Thư: 3000 ký tự,"1. Mở tin X
+2. Bấm Ứng tuyển, chọn CV
+3. Dán thư 3000 ký tự, gửi",Nộp đơn thành công; đơn ở trạng thái Đã nộp,P0,Biên,,Chưa chạy,,,
+TC-CAN07-002,CAN-07,Ứng viên,Thư giới thiệu 3001 ký tự bị chặn,Như TC-CAN07-001,Thư: 3001 ký tự,"1. Mở tin X
+2. Ứng tuyển, dán thư 3001 ký tự",Không cho nhập quá 3000 ký tự hoặc báo lỗi; không tạo đơn,P0,Biên,,Chưa chạy,,,
+TC-CAN07-003,CAN-07,Ứng viên,Bấm Ứng tuyển 2 lần liên tiếp,Như TC-CAN07-001,–,"1. Ứng tuyển tin X
+2. Bấm nút gửi 2 lần thật nhanh",Chỉ tạo 1 đơn; lần thứ 2 báo đã ứng tuyển,P0,Đoán lỗi,,Chưa chạy,,,
+TC-S52-001,§5.2,NTD,Chuyển đơn sang Phỏng vấn bắt buộc lịch,ntd1 có đơn ở trạng thái Phù hợp,Thời gian: ngày mai 9:00; Địa điểm: Văn phòng HN,"1. Mở đơn
+2. Chọn Phỏng vấn, bỏ trống thời gian → Lưu
+3. Nhập thời gian + địa điểm → Lưu","Bước 2 báo lỗi thiếu thông tin; bước 3 lưu thành công, ứng viên nhận thông báo trong web (và email nếu chọn)",P0,Trạng thái,,Chưa chạy,,,
+TC-S52-002,§5.2,NTD,Không chuyển Offer → Phỏng vấn,Đơn đang ở Offer,–,"1. Mở đơn ở Offer
+2. Tìm thao tác chuyển sang Phỏng vấn (UI hoặc gọi API PATCH)",UI không cho chọn; API trả lỗi 400; trạng thái giữ nguyên,P0,Trạng thái,,Chưa chạy,,,
+TC-S52-003,§5.2,Ứng viên,Không rút đơn khi đang Phỏng vấn,uv1 có đơn ở Phỏng vấn,–,"1. uv1 mở Đơn đã nộp
+2. Tìm nút Rút đơn",Không có nút rút; gọi API rút trả lỗi,P0,Trạng thái,,Chưa chạy,,,
+TC-SEC-001,§3 / §6.1,Phân quyền,NTD không xem được đơn của công ty khác (IDOR),Có đơn id=N thuộc công ty ntd1,id đơn của ntd1,"1. Đăng nhập ntd2
+2. Gọi GET đơn ứng tuyển id=N (Swagger/Postman) hoặc mở URL chi tiết đơn","Trả 404 ""Không tìm thấy""; không lộ dữ liệu ứng viên",P0,Bảo mật,,Chưa chạy,,,
+TC-SEC-002,§6.1,Bảo mật,Link CV hết hạn sau 5 phút,ntd1 xem chi tiết đơn có CV,–,"1. Mở CV, sao chép link
+2. Đợi > 5 phút
+3. Mở lại link",Link bị từ chối (hết hạn),P0,Bảo mật,,Chưa chạy,,,
+TC-EMP11-001,EMP-11,NTD,Chủ công ty mời đồng nghiệp thành công,ntd1 (Chủ) đăng nhập,Email: qa.ntd01@test.local; Vai trò: Thành viên,"1. Mở Đội tuyển dụng
+2. Nhập email, chọn vai trò, bấm Mời",Hiện lời mời đang chờ + link sao chép được; email mời in ra terminal API,P2,Chức năng,,Chưa chạy,,,
+TC-EMP11-002,EMP-11,NTD,Nhận lời mời bằng tài khoản mới,Có link mời của TC-EMP11-001; chưa đăng nhập,MK: Qa123456,"1. Mở link mời
+2. Bấm Đăng ký (email điền sẵn), chọn NTD
+3. Quay lại link, bấm Tham gia",Vào trang NTD của công ty ntd1 với vai trò Thành viên; ntd1 nhận thông báo,P2,Chức năng,,Chưa chạy,,,
+TC-EMP11-003,EMP-11,NTD,Email đăng nhập khác email được mời,Có link mời cho qa.ntd01; đăng nhập ntd2,–,"1. Mở link mời
+2. Bấm Tham gia","Báo tài khoản không khớp email được mời, gợi ý đăng xuất; không tham gia được",P2,Phân quyền,,Chưa chạy,,,
+TC-EMP11-004,EMP-11,NTD,Thành viên không sửa được hồ sơ công ty,ntd3 (Thành viên) đăng nhập,–,"1. Mở Hồ sơ công ty
+2. Gọi PATCH /api/employer/company bằng token ntd3","UI hiện thông báo chỉ xem, ô nhập bị khóa, không có nút Lưu/đổi logo/xác minh; API trả 403",P2,Phân quyền,,Chưa chạy,,,
+TC-EMP11-005,EMP-11,NTD,Không xóa được Chủ cuối cùng,Công ty chỉ có 1 Chủ (ntd1),–,1. ntd1 đổi vai trò chính mình thành Thành viên hoặc bấm Rời công ty,"Bị chặn, báo công ty phải còn ít nhất 1 chủ",P2,Trạng thái,,Chưa chạy,,,
+TC-EMP11-006,EMP-11,NTD,Link mời hết hạn sau 7 ngày,Lời mời tạo > 7 ngày (sửa expiresAt trong DB để giả lập),–,"1. Mở link mời
+2. Bấm Tham gia",Báo lời mời đã hết hạn; không tham gia được,P2,Biên,,Chưa chạy,,,

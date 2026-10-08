@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+!.env.prod.example
+uploads/
+*.log
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Triển khai
+deploy/.env.prod
+deploy/backups/
+backups/
+scripts/e2e-ket-qua.txt

@@ -1,0 +1,24 @@
+# Môi trường dev: SQL Server + Redis
+# Chạy: docker compose up -d
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: jobportal-sqlserver
+    environment:
+      ACCEPT_EULA: 'Y'
+      # Đặt DB_PASSWORD trong môi trường hoặc file .env cạnh file này (khớp api/.env)
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD:-Dev_Passw0rd_123!}
+      MSSQL_PID: Developer
+    ports:
+      - '1433:1433'
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+  redis:
+    image: redis:7-alpine
+    container_name: jobportal-redis
+    ports:
+      - '6379:6379'
+
+volumes:
+  sqlserver_data:

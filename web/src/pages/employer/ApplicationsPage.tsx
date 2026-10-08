@@ -1,0 +1,100 @@
+import { useEffect, useState, type FormEvent } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { Link, useSearchParams } from 'react-router-dom';
+import Pagination from '../../components/Pagination';
+import Select from '../../components/Select';
+import { api } from '../../lib/api';
+import { APPLICATION_STATUS, formatDate } from '../../lib/format';
+import type { Paginated } from '../../lib/types';
+import type { EmployerJobRow } from './types';
+import { ListSkeleton } from '../../components/Skeleton';
+
+interface Row {
+  id: number;
+  status: string;
+  createdAt: string;
+  hasNote: boolean;
+  job: { id: number; title: string };
+  candidate: { fullName: string; headline: string | null; avatarUrl: string | null; location: string | null; yearsOfExperience: number };
+}
+
+export default function ApplicationsPage() {
+  const [params, setParams] = useSearchParams();
+  const [kw, setKw] = useState(params.get('q') ?? '');
+  useEffect(() => setKw(params.get('q') ?? ''), [params]);
+  const page = Number(params.get('page') ?? 1);
+  const query = { jobId: params.get('jobId') || undefined, status: params.get('status') || undefined, q: params.get('q') || undefined };
+
+  const { data: jobs } = useQuery({
+    queryKey: ['employer', 'jobs', 'all-for-filter'],
+    queryFn: async () => (await api.get<Paginated<EmployerJobRow>>('/employer/jobs', { params: { limit: 50 } })).data.items,
+  });
+  const { data, isLoading } = useQuery({
+    queryKey: ['employer', 'applications', query, page],
+    queryFn: async () => (await api.get<Paginated<Row>>('/employer/applications', { params: { ...query, page, limit: 15 } })).data,
+    placeholderData: keepPreviousData,
+  });
+
+  function setFilter(k: string, v: string) {
+    const next = new URLSearchParams(params);
+    if (v) next.set(k, v);
+    else next.delete(k);
+    next.delete('page');
+    setParams(next);
+  }
+
+  return (
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Ứng viên ứng tuyển</h1>
+      <div className="grid gap-2 sm:grid-cols-[1fr_200px_1fr]">
+        <Select value={params.get('jobId') ?? ''} onChange={(e) => setFilter('jobId', e.target.value)} placeholder="Tất cả tin tuyển dụng" options={(jobs ?? []).map((j) => ({ value: j.id, label: j.title }))} />
+        <Select
+          value={params.get('status') ?? ''}
+          onChange={(e) => setFilter('status', e.target.value)}
+          placeholder="Mọi trạng thái"
+          options={Object.entries(APPLICATION_STATUS).map(([value, s]) => ({ value, label: s.label }))}
+        />
+        <form onSubmit={(e: FormEvent) => { e.preventDefault(); setFilter('q', kw.trim()); }} className="flex gap-2">
+          <input value={kw} onChange={(e) => setKw(e.target.value)} placeholder="Tên ứng viên…" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-600" />
+          <button className="rounded-lg bg-brand-600 px-3 text-sm text-white">Tìm</button>
+        </form>
+      </div>
+
+      {isLoading ? (
+        <ListSkeleton />
+      ) : data && data.items.length ? (
+        <>
+          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+            {data.items.map((a) => {
+              const st = APPLICATION_STATUS[a.status];
+              return (
+                <li key={a.id}>
+                  <Link to={`/employer/applications/${a.id}`} className={`flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-slate-50 ${a.status === 'SUBMITTED' ? 'bg-brand-50/50' : ''}`}>
+                    {a.candidate.avatarUrl ? (
+                      <img src={a.candidate.avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
+                    ) : (
+                      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 font-semibold text-slate-500">{a.candidate.fullName.charAt(0)}</span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className={a.status === 'SUBMITTED' ? 'font-semibold' : 'font-medium'}>
+                        {a.candidate.fullName} {a.hasNote && <span title="Có ghi chú">📝</span>}
+                      </p>
+                      <p className="truncate text-sm text-slate-500">
+                        {a.candidate.headline ?? 'Chưa có tiêu đề'} · {a.candidate.yearsOfExperience} năm KN{a.candidate.location ? ` · ${a.candidate.location}` : ''}
+                      </p>
+                      <p className="text-xs text-slate-400">Ứng tuyển “{a.job.title}” ngày {formatDate(a.createdAt)}</p>
+                    </div>
+                    <span className={`rounded px-2 py-1 text-xs font-medium ${st?.cls}`}>{a.status === 'SUBMITTED' ? 'Mới' : st?.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <Pagination page={page} totalPages={data.totalPages} onChange={(p) => { const n = new URLSearchParams(params); n.set('page', String(p)); setParams(n); }} />
+        </>
+      ) : (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">Chưa có ứng viên nào.</div>
+      )}
+    </div>
+  );
+}

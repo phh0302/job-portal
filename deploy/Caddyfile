@@ -1,0 +1,18 @@
+# Caddy tự xin & gia hạn chứng chỉ HTTPS (Let's Encrypt) cho tên miền.
+# Yêu cầu: bản ghi DNS A của {$DOMAIN} trỏ về IP VPS, mở cổng 80 và 443.
+{
+	email {$ACME_EMAIL}
+}
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	reverse_proxy web:80
+}

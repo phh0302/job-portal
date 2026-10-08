@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-50: #eff6ff;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 antialiased;
+}
+
+/* Nội dung có định dạng (mô tả công việc, trình soạn thảo) */
+.rich-text {
+  line-height: 1.65;
+}
+.rich-text > * + * {
+  margin-top: 0.6em;
+}
+.rich-text h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-slate-900);
+}
+.rich-text h3 {
+  font-weight: 600;
+}
+.rich-text ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+.rich-text ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+.rich-text li + li {
+  margin-top: 0.2em;
+}
+.rich-text li > p {
+  margin: 0;
+}
+.rich-text blockquote {
+  border-left: 3px solid var(--color-slate-300);
+  padding-left: 0.75rem;
+  color: var(--color-slate-600);
+}
+.rich-text a {
+  color: var(--color-brand-600);
+  text-decoration: underline;
+}
