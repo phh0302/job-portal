@@ -12,6 +12,7 @@ import AdminJobsPage from './pages/admin/JobsModerationPage';
 import AdminReportsPage from './pages/admin/ReportsPage';
 import AdminReviewsPage from './pages/admin/ReviewsPage';
 import AdminBillingPage from './pages/admin/BillingPage';
+import AdminSupportPage from './pages/admin/SupportPage';
 import EmployerBillingPage from './pages/employer/BillingPage';
 import CandidateReviewsPage from './pages/candidate/ReviewsPage';
 import CvBuilderPage from './pages/candidate/CvBuilderPage';
@@ -146,6 +147,7 @@ export const router = createBrowserRouter([
               { path: 'emails', element: <AdminEmailsPage /> },
               { path: 'reviews', element: <AdminReviewsPage /> },
               { path: 'billing', element: <AdminBillingPage /> },
+              { path: 'support', element: <AdminSupportPage /> },
               { path: 'audit', element: <AdminAuditPage /> },
             ],
           },

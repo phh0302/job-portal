@@ -12,6 +12,7 @@ import type { CompanyCard, JobCard as Job, Paginated } from '../../lib/types';
 import { DetailSkeleton } from '../../components/Skeleton';
 import CompanyReviews from '../../components/reviews/CompanyReviews';
 import { Stars } from '../../components/reviews/Stars';
+import ResponseBadge from '../../components/ResponseBadge';
 
 interface CompanyDetail extends CompanyCard {
   coverUrl: string | null;
@@ -113,6 +114,11 @@ export default function CompanyDetailPage() {
               <a href="#reviews" className="mt-1 inline-flex items-center gap-1 text-sm text-slate-600 hover:text-brand-600">
                 <Stars value={c.rating.average} size="text-sm" /> {c.rating.average.toFixed(1)} ({c.rating.count} đánh giá)
               </a>
+            )}
+            {c.response && (
+              <div className="mt-2 max-w-md">
+                <ResponseBadge info={c.response} compact />
+              </div>
             )}
             <div className="mt-3">
               <FollowButton companyId={c.id} />

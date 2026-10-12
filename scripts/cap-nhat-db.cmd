@@ -11,8 +11,15 @@ if errorlevel 1 goto :loi
 cd /d "%ROOT%\api"
 echo.
 echo === 2/4 Tao migration tu thay doi trong entity ===
-call npm run migration:generate --name=SchemaUpdate
-if errorlevel 1 echo (Khong co thay doi moi - bo qua buoc nay)
+call npm run migration:generate --name=SchemaUpdate > "%TEMP%\jp-migration.txt" 2>&1
+type "%TEMP%\jp-migration.txt"
+findstr /C:"No changes in database schema" "%TEMP%\jp-migration.txt" >nul && echo (Khong co thay doi moi - bo qua buoc nay) && goto :run
+findstr /C:"has been generated successfully" "%TEMP%\jp-migration.txt" >nul && goto :run
+echo.
+echo KHONG TAO DUOC MIGRATION - xem loi o tren.
+goto :loi
+
+:run
 
 echo.
 echo === 3/4 Chay migration ===

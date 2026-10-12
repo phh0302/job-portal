@@ -32,4 +32,14 @@ export const ORDER_STATUS: Record<OrderStatus, { label: string; cls: string }> =
   CANCELLED: { label: 'Đã huỷ', cls: 'bg-slate-200 text-slate-600' },
 };
 
+/**
+ * Ảnh mã QR chuyển khoản chuẩn VietQR (quét được bằng app của hầu hết ngân hàng VN).
+ * Dùng dịch vụ tạo ảnh công khai img.vietqr.io – điền sẵn số tiền và nội dung = mã đơn.
+ */
+export function vietQrUrl(bank: { bankCode: string; accountNo: string; accountName: string }, amount: number, content: string) {
+  if (!bank.bankCode.trim() || !bank.accountNo.trim()) return null;
+  const params = new URLSearchParams({ amount: String(Math.round(amount)), addInfo: content, accountName: bank.accountName });
+  return `https://img.vietqr.io/image/${encodeURIComponent(bank.bankCode.trim())}-${encodeURIComponent(bank.accountNo.trim())}-compact2.png?${params}`;
+}
+
 export const formatVnd = (n: number) => `${n.toLocaleString('vi-VN')} đ`;

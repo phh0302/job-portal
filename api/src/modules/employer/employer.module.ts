@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ResponseStatsRunner } from './response-stats.runner';
 import { CandidateUnlock } from '../billing/entities/candidate-unlock.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Application } from '../applications/entities/application.entity';
@@ -28,6 +29,7 @@ import { EmployerTeamService } from './team.service';
   ],
   controllers: [EmployerController, EmployerTeamController, TeamInvitationPublicController],
   providers: [
+    ResponseStatsRunner,
     EmployerContext,
     EmployerCompanyService,
     EmployerJobsService,

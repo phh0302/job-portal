@@ -22,6 +22,11 @@ export default function JobCard({ job, bare = false }: { job: Job; bare?: boolea
         </Link>
         <div className="mt-2 flex flex-wrap gap-2 text-xs">
           {job.featured && <span className="rounded bg-amber-100 px-2 py-0.5 font-semibold text-amber-700">★ Nổi bật</span>}
+          {job.company.response?.fast && (
+            <span className="rounded bg-emerald-50 px-2 py-0.5 font-medium text-emerald-700" title={`Phản hồi ${job.company.response.rate}% hồ sơ`}>
+              ⚡ Phản hồi nhanh
+            </span>
+          )}
           <span className="rounded bg-green-50 px-2 py-0.5 font-medium text-green-700">
             {formatSalary(job.salaryMin, job.salaryMax, job.salaryNegotiable)}
           </span>

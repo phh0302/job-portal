@@ -23,7 +23,7 @@ export default function ApplicationsPage() {
   const [kw, setKw] = useState(params.get('q') ?? '');
   useEffect(() => setKw(params.get('q') ?? ''), [params]);
   const page = Number(params.get('page') ?? 1);
-  const query = { jobId: params.get('jobId') || undefined, status: params.get('status') || undefined, q: params.get('q') || undefined };
+  const query = { jobId: params.get('jobId') || undefined, status: params.get('status') || undefined, q: params.get('q') || undefined, pending: params.get('pending') || undefined };
 
   const { data: jobs } = useQuery({
     queryKey: ['employer', 'jobs', 'all-for-filter'],
@@ -46,6 +46,12 @@ export default function ApplicationsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Ứng viên ứng tuyển</h1>
+      {params.get('pending') && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          Đang lọc: hồ sơ chờ quá 3 ngày chưa được phản hồi. Phản hồi (Phù hợp / Phỏng vấn / Từ chối) hoặc nhắn tin để giữ nhãn "Phản hồi nhanh".
+          <button onClick={() => setFilter('pending', '')} className="font-medium underline">Bỏ lọc</button>
+        </div>
+      )}
       <div className="grid gap-2 sm:grid-cols-[1fr_200px_1fr]">
         <Select value={params.get('jobId') ?? ''} onChange={(e) => setFilter('jobId', e.target.value)} placeholder="Tất cả tin tuyển dụng" options={(jobs ?? []).map((j) => ({ value: j.id, label: j.title }))} />
         <Select

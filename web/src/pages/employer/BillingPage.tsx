@@ -1,20 +1,40 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ListSkeleton } from '../../components/Skeleton';
 import { toast } from '../../components/Toast';
 import { Alert } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api';
-import { ORDER_STATUS, formatVnd, type Order, type Plan } from '../../lib/billing';
+import { ORDER_STATUS, formatVnd, vietQrUrl, type Order, type Plan } from '../../lib/billing';
 import { formatDate } from '../../lib/format';
 
 interface Overview {
   canPurchase: boolean;
   plan: { name: string | null; expiresAt: string | null; active: boolean; featuredCredits: number; contactCredits: number };
-  bank: { bankName: string; accountNo: string; accountName: string };
+  bank: { bankName: string; bankCode: string; accountNo: string; accountName: string };
   featureDays: number;
   orders: Order[];
 }
 
 const KEY = ['employer', 'billing'];
+
+/** Ảnh QR VietQR; lỗi tải ảnh (mất mạng, sai mã ngân hàng) → ẩn, vẫn còn thông tin chuyển khoản thủ công */
+function QrImage({ url, code }: { url: string | null; code: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!url || failed) return null;
+  return (
+    <a href={url} target="_blank" rel="noreferrer" title="Mở ảnh QR lớn" className="shrink-0">
+      <img
+        src={url}
+        alt={`Mã QR chuyển khoản cho đơn ${code}`}
+        width={180}
+        height={180}
+        loading="lazy"
+        onError={() => setFailed(true)}
+        className="h-[180px] w-[180px] rounded-lg border border-slate-200 bg-white object-contain"
+      />
+    </a>
+  );
+}
 
 function copy(text: string) {
   void navigator.clipboard?.writeText(text).then(() => toast(`Đã sao chép: ${text}`));
@@ -70,7 +90,7 @@ export default function BillingPage() {
       {pending.length > 0 && (
         <section className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
           <h2 className="font-semibold">Hướng dẫn thanh toán</h2>
-          <p>Chuyển khoản tới tài khoản dưới đây, <b>ghi đúng mã đơn</b> ở nội dung chuyển khoản. Gói được kích hoạt sau khi quản trị viên xác nhận (thường trong giờ làm việc).</p>
+          <p>Quét mã QR bằng app ngân hàng (đã điền sẵn số tiền và nội dung), hoặc chuyển khoản thủ công tới tài khoản dưới đây và <b>ghi đúng mã đơn</b> ở nội dung chuyển khoản. Gói được kích hoạt sau khi quản trị viên xác nhận (thường trong giờ làm việc).</p>
           <dl className="grid gap-1 sm:grid-cols-[160px_1fr]">
             <dt className="text-slate-500">Ngân hàng</dt>
             <dd>{bank.bankName}</dd>
@@ -83,22 +103,30 @@ export default function BillingPage() {
             <dd>{bank.accountName}</dd>
           </dl>
           {pending.map((o) => (
-            <div key={o.id} className="flex flex-wrap items-center gap-3 rounded-lg bg-white p-3">
-              <span>
-                Đơn <b>{o.code}</b>{' '}
-                <button onClick={() => copy(o.code)} className="text-brand-600 hover:underline">Sao chép</button>
-              </span>
-              <span>· {o.planName}</span>
-              <span className="font-semibold">· {formatVnd(o.amount)}</span>
-              {data.canPurchase && (
-                <button
-                  onClick={() => window.confirm(`Huỷ đơn ${o.code}?`) && cancel.mutate(o.id)}
-                  disabled={cancel.isPending}
-                  className="ml-auto text-xs text-red-600 hover:underline"
-                >
-                  Huỷ đơn
-                </button>
-              )}
+            <div key={o.id} className="flex flex-col gap-4 rounded-lg bg-white p-3 sm:flex-row sm:items-center">
+              <QrImage url={vietQrUrl(bank, o.amount, o.code)} code={o.code} />
+              <dl className="grid flex-1 gap-1 sm:grid-cols-[120px_1fr]">
+                <dt className="text-slate-500">Mã đơn (nội dung CK)</dt>
+                <dd>
+                  <b className="font-mono">{o.code}</b>{' '}
+                  <button onClick={() => copy(o.code)} className="text-brand-600 hover:underline">Sao chép</button>
+                </dd>
+                <dt className="text-slate-500">Gói</dt>
+                <dd>{o.planName}</dd>
+                <dt className="text-slate-500">Số tiền</dt>
+                <dd className="font-semibold">{formatVnd(o.amount)}</dd>
+                {data.canPurchase && (
+                  <dd className="sm:col-start-2">
+                    <button
+                      onClick={() => window.confirm(`Huỷ đơn ${o.code}?`) && cancel.mutate(o.id)}
+                      disabled={cancel.isPending}
+                      className="text-xs text-red-600 hover:underline"
+                    >
+                      Huỷ đơn
+                    </button>
+                  </dd>
+                )}
+              </dl>
             </div>
           ))}
           <p className="text-xs text-slate-500">Đây là thanh toán giả lập – không có giao dịch thật nào được thực hiện qua hệ thống.</p>

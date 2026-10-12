@@ -1,3 +1,4 @@
+import { MIN_RESPONSE_SAMPLE, responseInfo } from '../../common/utils/response-stats';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, In, Repository, SelectQueryBuilder } from 'typeorm';
@@ -56,6 +57,9 @@ export class JobsService {
     if (dto.jobType) qb.andWhere('j.job_type = :jt', { jt: dto.jobType });
     if (dto.level) qb.andWhere('j.level = :lv', { lv: dto.level });
     if (dto.experience !== undefined) qb.andWhere('j.experience_years <= :exp', { exp: dto.experience });
+    if (dto.fastResponse) {
+      qb.andWhere('c.response_sample >= :minSample AND c.response_rate >= 80 AND c.avg_response_hours <= 72', { minSample: MIN_RESPONSE_SAMPLE });
+    }
     if (dto.salaryMin) {
       qb.andWhere(
         new Brackets((w) =>
@@ -212,6 +216,7 @@ export class JobsService {
         slug: j.company.slug,
         logoUrl: this.storage.publicUrl(j.company.logoUrl),
         verified: j.company.verificationStatus === 'VERIFIED',
+        response: responseInfo(j.company),
       },
     };
   }

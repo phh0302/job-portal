@@ -83,6 +83,7 @@ export enum NotificationType {
   REVIEW_REJECTED = 'REVIEW_REJECTED',
   ORDER_PAID = 'ORDER_PAID',
   ORDER_CANCELLED = 'ORDER_CANCELLED',
+  SUPPORT = 'SUPPORT',
   SYSTEM = 'SYSTEM',
 }
 
@@ -129,4 +130,28 @@ export enum OrderStatus {
   PENDING = 'PENDING',
   PAID = 'PAID',
   CANCELLED = 'CANCELLED',
+}
+
+/** Hội thoại hỗ trợ khách hàng */
+export enum SupportStatus {
+  /** Chỉ đang nói chuyện với trợ lý tự động */
+  BOT = 'BOT',
+  /** Đã chuyển nhân viên, đang chờ admin trả lời */
+  WAITING = 'WAITING',
+  /** Admin đã tham gia */
+  OPEN = 'OPEN',
+  CLOSED = 'CLOSED',
+}
+
+export enum SupportSender {
+  USER = 'USER',
+  BOT = 'BOT',
+  ADMIN = 'ADMIN',
+  SYSTEM = 'SYSTEM',
+}
+
+export enum FaqAudience {
+  ALL = 'ALL',
+  CANDIDATE = 'CANDIDATE',
+  EMPLOYER = 'EMPLOYER',
 }

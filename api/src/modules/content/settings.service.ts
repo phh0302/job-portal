@@ -16,6 +16,7 @@ export const SETTING_DEFS = {
   paymentBankName: { label: 'Thanh toán – Ngân hàng nhận chuyển khoản', type: 'string', default: 'Vietcombank – CN Hà Nội', max: 100 },
   paymentAccountNo: { label: 'Thanh toán – Số tài khoản', type: 'string', default: '0000000000', max: 30 },
   paymentAccountName: { label: 'Thanh toán – Chủ tài khoản', type: 'string', default: 'CONG TY JOBPORTAL', max: 100 },
+  paymentBankCode: { label: 'Thanh toán – Mã ngân hàng cho mã QR VietQR (vd: VCB, MB, TCB, ACB hoặc mã BIN 970436; để trống = không hiện QR)', type: 'string', default: 'VCB', max: 20 },
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFS;

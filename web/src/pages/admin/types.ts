@@ -3,7 +3,7 @@ export interface AdminOverview {
   companies: { total: number; verified: number; byStatus: Record<string, number> };
   jobs: { total: number; open: number; byStatus: Record<string, number> };
   applications: { total: number };
-  todo: { pendingJobs: number; pendingCompanies: number; openReports: number; pendingReviews: number; pendingOrders: number };
+  todo: { pendingJobs: number; pendingCompanies: number; openReports: number; pendingReviews: number; pendingOrders: number; pendingSupport: number };
 }
 
 export interface AdminUserRow {

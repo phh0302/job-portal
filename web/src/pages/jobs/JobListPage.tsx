@@ -11,7 +11,7 @@ import { useSeo } from '../../lib/seo';
 import type { JobCard as Job, Paginated } from '../../lib/types';
 import { ListSkeleton } from '../../components/Skeleton';
 
-const FILTER_KEYS = ['q', 'locationId', 'categoryId', 'jobType', 'level', 'salaryMin', 'experience', 'sort', 'page'] as const;
+const FILTER_KEYS = ['q', 'locationId', 'categoryId', 'jobType', 'level', 'salaryMin', 'experience', 'fastResponse', 'sort', 'page'] as const;
 const toOptions = (rec: Record<string, string>) => Object.entries(rec).map(([value, label]) => ({ value, label }));
 const SALARY_OPTIONS = [5, 10, 15, 20, 30, 50].map((m) => ({ value: m * 1_000_000, label: `Từ ${m} triệu` }));
 const EXP_OPTIONS = [0, 1, 2, 3, 5].map((y) => ({ value: y, label: y === 0 ? 'Không yêu cầu' : `Tối đa ${y} năm` }));
@@ -51,7 +51,7 @@ export default function JobListPage() {
     setFilter('q', keyword.trim());
   }
 
-  const filterCount = ['locationId', 'categoryId', 'jobType', 'level', 'salaryMin', 'experience'].filter((k) => params.get(k)).length;
+  const filterCount = ['locationId', 'categoryId', 'jobType', 'level', 'salaryMin', 'experience', 'fastResponse'].filter((k) => params.get(k)).length;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
@@ -84,6 +84,18 @@ export default function JobListPage() {
           <Select label="Loại hình" value={params.get('jobType') ?? ''} onChange={(e) => setFilter('jobType', e.target.value)} placeholder="Tất cả" options={toOptions(JOB_TYPE_LABEL)} />
           <Select label="Cấp bậc" value={params.get('level') ?? ''} onChange={(e) => setFilter('level', e.target.value)} placeholder="Tất cả" options={toOptions(LEVEL_LABEL)} />
           <Select label="Kinh nghiệm" value={params.get('experience') ?? ''} onChange={(e) => setFilter('experience', e.target.value)} placeholder="Tất cả" options={EXP_OPTIONS} />
+          <label className="flex items-start gap-2 rounded-lg bg-emerald-50 p-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={params.get('fastResponse') === 'true'}
+              onChange={(e) => setFilter('fastResponse', e.target.checked ? 'true' : '')}
+            />
+            <span>
+              <span className="font-medium text-emerald-800">⚡ Chỉ NTD phản hồi nhanh</span>
+              <span className="block text-xs text-slate-500">Phản hồi ≥ 80% hồ sơ, trung bình trong 3 ngày</span>
+            </span>
+          </label>
         </aside>
 
         <section>

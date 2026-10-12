@@ -20,6 +20,7 @@ export default function AdminLayout() {
     { to: '/admin/reports', label: 'Báo cáo vi phạm', badge: data?.todo.openReports },
     { to: '/admin/reviews', label: 'Duyệt đánh giá', badge: data?.todo.pendingReviews },
     { to: '/admin/billing', label: 'Gói & thanh toán', badge: data?.todo.pendingOrders },
+    { to: '/admin/support', label: 'Hỗ trợ khách hàng', badge: data?.todo.pendingSupport },
     { to: '/admin/users', label: 'Người dùng' },
     { to: '/admin/catalog', label: 'Danh mục' },
     { to: '/admin/content', label: 'Trang & cấu hình' },

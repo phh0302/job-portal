@@ -69,6 +69,13 @@ export function timeAgo(value: string | null): string {
   return formatDate(value);
 }
 
+/** "trong 5 giờ" / "trong 2 ngày" */
+export function responseTimeText(hours: number | null): string {
+  if (hours === null) return '';
+  if (hours < 24) return `trong ${Math.max(1, hours)} giờ`;
+  return `trong ${Math.round(hours / 24)} ngày`;
+}
+
 export function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;

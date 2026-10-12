@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { TimezoneCheck } from './timezone-check';
 import { buildTypeOrmOptions } from './typeorm.config';
 
 @Module({
@@ -11,5 +12,6 @@ import { buildTypeOrmOptions } from './typeorm.config';
       }),
     }),
   ],
+  providers: [TimezoneCheck],
 })
 export class DatabaseModule {}

@@ -1,3 +1,4 @@
+import { responseTimeText } from '../../lib/format';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import ColumnChart from '../../components/charts/ColumnChart';
@@ -5,6 +6,7 @@ import { Alert } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api';
 
 interface Stats {
+  response: { rate: number | null; avgHours: number | null; sample: number; public: { fast: boolean } | null; minSample: number; overdue: number; remindDays: number };
   jobs: { total: number; open: number; pending: number; views: number };
   applications: { total: number; new: number; byStatus: Record<string, number> };
   funnel: { key: string; label: string; count: number; rate: number }[];
@@ -22,6 +24,43 @@ function Tile({ label, value, sub, to }: { label: string; value: number; sub?: s
   );
   const cls = 'block rounded-xl border border-slate-200 bg-white p-4';
   return to ? <Link to={to} className={`${cls} hover:border-brand-600/40`}>{body}</Link> : <div className={cls}>{body}</div>;
+}
+
+/** Chỉ số phản hồi – hiển thị công khai cho ứng viên ở tin & trang công ty */
+function ResponseCard({ r }: { r: Stats['response'] }) {
+  const fast = r.public?.fast;
+  return (
+    <section className={`rounded-xl border p-5 ${fast ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-white'}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">{fast ? '⚡ Công ty đang có nhãn "Phản hồi nhanh"' : 'Chỉ số phản hồi ứng viên'}</h2>
+          <p className="text-xs text-slate-500">
+            Hiển thị công khai trên tin tuyển dụng khi có từ {r.minSample} hồ sơ · Nhãn "Phản hồi nhanh": phản hồi ≥ 80% hồ sơ, trung bình ≤ 3 ngày
+          </p>
+        </div>
+        {r.overdue > 0 && (
+          <Link to="/employer/applications?pending=1" className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700">
+            {r.overdue} hồ sơ chờ quá {r.remindDays} ngày →
+          </Link>
+        )}
+      </div>
+      <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
+        <div>
+          <dt className="text-xs text-slate-500">Tỉ lệ phản hồi</dt>
+          <dd className="text-2xl font-bold tabular-nums">{r.rate === null ? '–' : `${r.rate}%`}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-slate-500">Thời gian trung bình</dt>
+          <dd className="text-2xl font-bold tabular-nums">{r.avgHours === null ? '–' : responseTimeText(r.avgHours).replace('trong ', '')}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-slate-500">Số hồ sơ tính (90 ngày)</dt>
+          <dd className="text-2xl font-bold tabular-nums">{r.sample}</dd>
+        </div>
+      </dl>
+      <p className="mt-2 text-xs text-slate-500">"Phản hồi" = chuyển hồ sơ sang Phù hợp / Phỏng vấn / Offer / Từ chối, hoặc nhắn tin cho ứng viên. Chỉ số cập nhật mỗi giờ.</p>
+    </section>
+  );
 }
 
 const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
@@ -50,6 +89,8 @@ export default function DashboardPage() {
         <Tile label="Đơn ứng tuyển" value={data.applications.total} sub={`${last30} đơn trong 30 ngày`} to="/employer/applications" />
         <Tile label="Đơn chưa xem" value={data.applications.new} to="/employer/applications?status=SUBMITTED" />
       </div>
+
+      <ResponseCard r={data.response} />
 
       <section className="rounded-xl border border-slate-200 bg-white p-5">
         <h2 className="font-semibold">Số đơn ứng tuyển theo ngày</h2>

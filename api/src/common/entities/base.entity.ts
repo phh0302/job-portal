@@ -1,6 +1,6 @@
 import { CreateDateColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
-/** id tự tăng + created_at / updated_at (datetime2, giờ UTC). */
+/** id tự tăng + created_at / updated_at (datetime2, GIỜ MÁY CHỦ – xem typeorm.config: useUTC=false). */
 export abstract class BaseEntity {
   @PrimaryGeneratedColumn({ type: 'int' })
   id!: number;

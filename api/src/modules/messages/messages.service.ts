@@ -10,6 +10,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { RealtimeService } from '../notifications/realtime.service';
 import { StorageService } from '../storage/storage.service';
 import { ApplicationMessage } from './entities/application-message.entity';
+import { markResponded } from '../applications/mark-responded';
 
 export type ChatSide = 'EMPLOYER' | 'CANDIDATE';
 const PAGE = 50;
@@ -148,6 +149,7 @@ export class MessagesService {
     const a = await this.ownApplication(side, userId, applicationId);
     if (!this.canSend(side, a)) throw new BadRequestException(this.sendHint(side, a) ?? 'Không thể gửi tin nhắn');
 
+    if (side === 'EMPLOYER') await markResponded(this.apps, a.id);
     const wasUnreadForRecipient = this.isUnread(side === 'EMPLOYER' ? 'CANDIDATE' : 'EMPLOYER', a);
     const msg = await this.messages.save(
       this.messages.create({

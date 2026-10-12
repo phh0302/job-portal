@@ -36,7 +36,10 @@ function setup(over: Partial<App> = {}) {
     save: jest.fn(async (x: object) => ({ id: nextId++, createdAt: new Date(), ...x })),
     find: async () => [],
   };
+  const qbExec = jest.fn(async () => ({ affected: 1 }));
+  const qb = { update: () => qb, set: () => qb, where: () => qb, execute: qbExec };
   const apps = {
+    createQueryBuilder: () => qb,
     findOne: async () => app,
     update: jest.fn(async (_id: number, patch: Partial<App>) => Object.assign(app, patch)),
   };
@@ -58,7 +61,7 @@ function setup(over: Partial<App> = {}) {
     realtime as never,
     storage as never,
   );
-  return { svc, app, messages, apps, notifications, realtime };
+  return { svc, app, messages, apps, notifications, realtime, qbExec };
 }
 
 describe('MessagesService', () => {
@@ -78,6 +81,12 @@ describe('MessagesService', () => {
     expect(notifications.create).toHaveBeenCalledWith([
       expect.objectContaining({ userId: 70, type: NotificationType.NEW_MESSAGE, link: '/candidate/messages/1' }),
     ]);
+  });
+
+  it('tin nhắn đầu của NTD được tính là đã phản hồi ứng viên', async () => {
+    const { svc, qbExec } = setup();
+    await svc.send('EMPLOYER', 10, 1, 'Chào bạn');
+    expect(qbExec).toHaveBeenCalledTimes(1);
   });
 
   it('không tạo thông báo lặp khi người nhận còn tin chưa đọc', async () => {

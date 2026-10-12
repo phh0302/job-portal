@@ -5,6 +5,7 @@ import { ROLE_HOME, ROLE_LABEL } from '../auth/types';
 import NotificationBell from '../components/NotificationBell';
 import VerifyEmailBanner from '../components/VerifyEmailBanner';
 import { useRealtimeNotifications } from '../lib/realtime';
+import SupportWidget from '../components/support/SupportWidget';
 import { usePublicSettings } from '../lib/settings';
 
 export default function PublicLayout() {
@@ -108,6 +109,7 @@ export default function PublicLayout() {
         </nav>
         © {new Date().getFullYear()} JobPortal
       </footer>
+      <SupportWidget />
     </div>
   );
 }

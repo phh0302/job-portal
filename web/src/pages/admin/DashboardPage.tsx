@@ -44,6 +44,7 @@ export default function AdminDashboardPage() {
     { n: o.todo.openReports, label: 'báo cáo vi phạm chưa xử lý', to: '/admin/reports' },
     { n: o.todo.pendingReviews, label: 'đánh giá công ty chờ duyệt', to: '/admin/reviews' },
     { n: o.todo.pendingOrders, label: 'đơn mua gói chờ xác nhận thanh toán', to: '/admin/billing' },
+    { n: o.todo.pendingSupport, label: 'cuộc hỗ trợ khách hàng chưa trả lời', to: '/admin/support' },
   ];
 
   return (

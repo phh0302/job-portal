@@ -17,3 +17,7 @@ deploy/.env.prod
 deploy/backups/
 backups/
 scripts/e2e-ket-qua.txt
+
+# Công cụ chạy cục bộ
+ngrok.exe
+*.tsbuildinfo

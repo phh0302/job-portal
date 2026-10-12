@@ -11,6 +11,8 @@ services:
     restart: unless-stopped
     environment:
       ACCEPT_EULA: 'Y'
+      # API và SQL Server phải cùng múi giờ (xem api/src/database/typeorm.config.ts)
+      TZ: UTC
       MSSQL_SA_PASSWORD: ${DB_PASSWORD}
       MSSQL_PID: ${MSSQL_PID:-Express}
       # Giới hạn RAM cho SQL Server để chừa chỗ cho API/web trên VPS nhỏ
@@ -34,6 +36,7 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      TZ: UTC
       PORT: 3000
       TRUST_PROXY: 2 # Caddy + Nginx
       CORS_ORIGIN: https://${DOMAIN}

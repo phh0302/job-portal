@@ -2,10 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ApplicationStatus, JobStatus } from '../../common/enums';
-import { todayVN } from '../../common/utils/date';
+import { sqlToVN, todayVN } from '../../common/utils/date';
 import { Application } from '../applications/entities/application.entity';
 import { Job } from '../jobs/entities/job.entity';
 import { EmployerContext } from './employer-context.service';
+import { MIN_RESPONSE_SAMPLE, RESPONSE_REMIND_DAYS, responseInfo } from '../../common/utils/response-stats';
 
 const DAYS = 30;
 
@@ -60,11 +61,11 @@ export class EmployerDashboardService {
     const dailyRows: { day: string | Date; cnt: number }[] = await this.apps
       .createQueryBuilder('a')
       .innerJoin('a.job', 'j')
-      .select('CAST(DATEADD(hour, 7, a.created_at) AS date)', 'day')
+      .select(`CAST(${sqlToVN('a.created_at')} AS date)`, 'day')
       .addSelect('COUNT(*)', 'cnt')
       .where('j.company_id = :cid', { cid })
       .andWhere('a.created_at >= :from', { from })
-      .groupBy('CAST(DATEADD(hour, 7, a.created_at) AS date)')
+      .groupBy(`CAST(${sqlToVN('a.created_at')} AS date)`)
       .getRawMany();
     const dailyMap = new Map(
       dailyRows.map((r) => [typeof r.day === 'string' ? r.day.slice(0, 10) : r.day.toISOString().slice(0, 10), Number(r.cnt)]),
@@ -86,7 +87,23 @@ export class EmployerDashboardService {
       .limit(5)
       .getRawMany();
 
+    const [waiting] = (await this.apps.query(
+      `SELECT COUNT(*) AS cnt FROM applications a INNER JOIN jobs j ON j.id = a.job_id
+       WHERE j.company_id = @0 AND a.responded_at IS NULL AND a.status IN ('SUBMITTED', 'VIEWED')
+         AND a.created_at < DATEADD(day, -${RESPONSE_REMIND_DAYS}, GETDATE())`,
+      [cid],
+    )) as { cnt: number }[];
+
     return {
+      response: {
+        rate: company.responseRate,
+        avgHours: company.avgResponseHours,
+        sample: company.responseSample,
+        public: responseInfo(company),
+        minSample: MIN_RESPONSE_SAMPLE,
+        overdue: Number(waiting?.cnt ?? 0),
+        remindDays: RESPONSE_REMIND_DAYS,
+      },
       jobs: {
         total: Number(jobAgg?.total ?? 0),
         open: Number(jobAgg?.open ?? 0),

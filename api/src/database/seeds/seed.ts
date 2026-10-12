@@ -29,6 +29,8 @@ import { CATEGORIES, LOCATIONS, SKILLS } from './seed-data';
 import { StaticPage } from '../../modules/content/entities/static-page.entity';
 import { DEFAULT_PAGES } from '../../modules/content/pages.service';
 import { ServicePlan } from '../../modules/billing/entities/service-plan.entity';
+import { FaqArticle } from '../../modules/support/entities/faq-article.entity';
+import { FaqAudience } from '../../common/enums';
 
 const DEMO_PASSWORD = 'Demo@123';
 
@@ -294,6 +296,36 @@ async function seedPlans(m: EntityManager) {
   if (added) console.log(`  Gói dịch vụ: thêm ${added} gói`);
 }
 
+/** Câu hỏi thường gặp cho trợ lý hỗ trợ (chỉ thêm khi bảng còn trống; admin sửa ở "Hỗ trợ khách hàng") */
+async function seedFaqs(m: EntityManager) {
+  const repo = m.getRepository(FaqArticle);
+  if (await repo.count()) return;
+  const A = FaqAudience;
+  const items: { question: string; answer: string; keywords: string; audience: FaqAudience }[] = [
+    { audience: A.ALL, question: 'Tôi quên mật khẩu thì làm thế nào?', keywords: 'quên mật khẩu, đặt lại mật khẩu, không đăng nhập được, reset', answer: 'Bạn vào trang Đăng nhập → bấm "Quên mật khẩu", nhập email đã đăng ký. Hệ thống gửi link đặt lại mật khẩu (hiệu lực 30 phút, dùng 1 lần). Không thấy email thì kiểm tra thư mục Spam/Quảng cáo.' },
+    { audience: A.ALL, question: 'Không nhận được email xác minh tài khoản?', keywords: 'xác minh email, kích hoạt, không nhận email, gửi lại', answer: 'Kiểm tra thư mục Spam/Quảng cáo. Nếu vẫn không có, đăng nhập rồi bấm "Gửi lại email xác minh" trên thanh thông báo màu vàng (tối đa 3 lần / 5 phút). Link xác minh có hiệu lực 24 giờ.' },
+    { audience: A.ALL, question: 'Tài khoản của tôi bị khoá, phải làm sao?', keywords: 'bị khoá, khóa tài khoản, không đăng nhập, cấm', answer: 'Tài khoản bị khoá khi vi phạm quy định (ví dụ đăng tin sai sự thật). Bạn vui lòng bấm "Gặp nhân viên" để được kiểm tra và giải đáp lý do cụ thể.' },
+    { audience: A.ALL, question: 'Làm sao đổi mật khẩu?', keywords: 'đổi mật khẩu, thay mật khẩu, bảo mật', answer: 'Vào menu tài khoản → "Đổi mật khẩu". Mật khẩu mới 8–64 ký tự, gồm cả chữ và số. Sau khi đổi, các thiết bị khác sẽ bị đăng xuất để đảm bảo an toàn.' },
+    { audience: A.CANDIDATE, question: 'Làm sao để ứng tuyển một công việc?', keywords: 'ứng tuyển, nộp hồ sơ, nộp cv, apply, 1 chạm', answer: 'Mở tin tuyển dụng và bấm "⚡ Ứng tuyển 1 chạm" để nộp ngay bằng CV mặc định (chưa có CV thì hệ thống tự tạo CV từ hồ sơ). Muốn chọn CV khác hoặc viết thư giới thiệu, bấm "Chọn CV / viết thư giới thiệu".' },
+    { audience: A.CANDIDATE, question: 'Tôi có thể tải lên bao nhiêu CV và định dạng nào?', keywords: 'tải cv, upload cv, định dạng, dung lượng, pdf, word', answer: 'Bạn lưu được tối đa 5 CV, định dạng PDF, DOC hoặc DOCX, mỗi file tối đa 5MB. Quản lý ở mục "CV của tôi"; có thể đặt 1 CV làm mặc định.' },
+    { audience: A.CANDIDATE, question: 'Tạo CV online như thế nào?', keywords: 'tạo cv, mẫu cv, cv online, xuất pdf', answer: 'Vào "Tạo CV online": CV được tạo tự động từ "Hồ sơ của tôi". Chọn mẫu (Hiện đại / Cổ điển / Tối giản), màu, thêm chứng chỉ, ngoại ngữ… rồi bấm "Tải PDF" hoặc "Lưu vào CV của tôi" để dùng khi ứng tuyển.' },
+    { audience: A.CANDIDATE, question: 'Làm sao rút đơn ứng tuyển?', keywords: 'rút đơn, huỷ ứng tuyển, hủy đơn', answer: 'Vào "Việc đã ứng tuyển" → bấm "Rút đơn". Chỉ rút được khi đơn đang ở trạng thái Đã nộp / Đã xem / Phù hợp. Rút rồi thì không nộp lại vào tin đó được.' },
+    { audience: A.CANDIDATE, question: 'Vì sao nhà tuyển dụng chưa phản hồi hồ sơ của tôi?', keywords: 'chưa phản hồi, không trả lời, chờ phản hồi, trạng thái đơn', answer: 'Mỗi nhà tuyển dụng có tốc độ xử lý khác nhau. Bạn xem chỉ số "Phản hồi …% hồ sơ, thường trong … ngày" ở trang tin tuyển dụng, và dùng bộ lọc "⚡ Chỉ NTD phản hồi nhanh" khi tìm việc. Khi trạng thái đơn thay đổi, bạn sẽ nhận thông báo.' },
+    { audience: A.CANDIDATE, question: 'Làm sao để nhà tuyển dụng tìm thấy hồ sơ của tôi?', keywords: 'tìm thấy hồ sơ, công khai hồ sơ, nhà tuyển dụng tìm', answer: 'Vào "Hồ sơ của tôi" và bật "Cho phép nhà tuyển dụng tìm thấy hồ sơ". Thông tin liên hệ của bạn chỉ hiện khi nhà tuyển dụng dùng lượt mở liên hệ, và bạn có thể tắt bất cứ lúc nào.' },
+    { audience: A.CANDIDATE, question: 'Gặp tin tuyển dụng lừa đảo thì làm gì?', keywords: 'lừa đảo, thu phí, tin giả, báo cáo, vi phạm', answer: 'Tuyệt đối không chuyển tiền đặt cọc / phí hồ sơ cho bất kỳ ai. Bấm "Báo cáo" trên tin tuyển dụng và chọn lý do; quản trị viên sẽ xem xét và gỡ tin nếu vi phạm.' },
+    { audience: A.EMPLOYER, question: 'Đăng tin tuyển dụng như thế nào và bao lâu được duyệt?', keywords: 'đăng tin, duyệt tin, chờ duyệt, tin tuyển dụng', answer: 'Vào "Tin tuyển dụng" → "+ Đăng tin mới", điền thông tin rồi bấm "Gửi duyệt". Quản trị viên duyệt trong giờ hành chính; bị từ chối sẽ có lý do để bạn sửa và gửi lại. Cần tạo hồ sơ công ty trước khi đăng tin.' },
+    { audience: A.EMPLOYER, question: 'Vì sao tin của tôi phải duyệt lại sau khi sửa?', keywords: 'sửa tin, duyệt lại, chờ duyệt', answer: 'Sửa tiêu đề, mô tả, yêu cầu, quyền lợi, ngành hoặc kỹ năng của tin đang hiển thị thì tin cần duyệt lại. Sửa lương, hạn nộp, số lượng, địa điểm thì không phải duyệt lại.' },
+    { audience: A.EMPLOYER, question: 'Xác minh doanh nghiệp như thế nào?', keywords: 'xác minh, giấy phép kinh doanh, tích xanh, verified', answer: 'Vào "Hồ sơ công ty" → "Gửi giấy phép kinh doanh" (PDF/JPG/PNG, tối đa 5MB, cần có mã số thuế). Công ty đã xác minh có dấu ✔ trên tin và trang công ty.' },
+    { audience: A.EMPLOYER, question: 'Mua gói dịch vụ và thanh toán thế nào?', keywords: 'mua gói, thanh toán, chuyển khoản, qr, gói dịch vụ, giá', answer: 'Vào "Gói dịch vụ" → chọn gói → "Mua gói". Quét mã QR (đã có sẵn số tiền và nội dung) hoặc chuyển khoản với nội dung là mã đơn. Gói được kích hoạt sau khi quản trị viên xác nhận đã nhận tiền. Chỉ chủ công ty mới mua được gói.' },
+    { audience: A.EMPLOYER, question: 'Đã chuyển khoản nhưng gói chưa được kích hoạt?', keywords: 'chưa kích hoạt, đã chuyển khoản, chưa nhận, thanh toán chậm', answer: 'Việc xác nhận thường trong giờ hành chính. Nếu đã quá lâu, bạn bấm "Gặp nhân viên" và gửi mã đơn để được kiểm tra.' },
+    { audience: A.EMPLOYER, question: 'Tin nổi bật và lượt mở liên hệ là gì?', keywords: 'tin nổi bật, đẩy tin, mở liên hệ, lượt, credits', answer: 'Mỗi lượt "đẩy tin nổi bật" đưa tin lên đầu kết quả tìm kiếm 7 ngày, có nhãn ★. Mỗi lượt "mở liên hệ" cho xem email, SĐT của một ứng viên trong "Tìm hồ sơ" (mở 1 lần, cả công ty xem được). Lượt chỉ dùng được khi gói còn hạn.' },
+    { audience: A.EMPLOYER, question: 'Làm sao mời đồng nghiệp cùng quản lý tuyển dụng?', keywords: 'mời đồng nghiệp, thêm thành viên, đội tuyển dụng, nhiều tài khoản', answer: 'Chủ công ty vào "Đội tuyển dụng" → nhập email đồng nghiệp → "Mời". Người được mời mở link trong email (hiệu lực 7 ngày) để tham gia. Thành viên đăng tin và xử lý hồ sơ được, nhưng không sửa hồ sơ công ty hay mua gói.' },
+    { audience: A.EMPLOYER, question: 'Nhãn "Phản hồi nhanh" là gì?', keywords: 'phản hồi nhanh, tỉ lệ phản hồi, nhãn, chỉ số', answer: 'Công ty phản hồi ≥ 80% hồ sơ và trung bình trong 3 ngày (tính trên 90 ngày, từ 5 hồ sơ trở lên) sẽ có nhãn "⚡ Phản hồi nhanh" trên tin. "Phản hồi" là chuyển hồ sơ sang Phù hợp / Phỏng vấn / Offer / Từ chối hoặc nhắn tin cho ứng viên.' },
+  ];
+  await repo.insert(items.map((it, i) => ({ ...it, isActive: true, sortOrder: i + 1 })));
+  console.log(`  FAQ hỗ trợ: thêm ${items.length} câu hỏi`);
+}
+
 async function main() {
   await dataSource.initialize();
   console.log('Seeding…');
@@ -302,6 +334,7 @@ async function main() {
     await seedAdmin(m);
     await seedPages(m);
     await seedPlans(m);
+    await seedFaqs(m);
     if (process.env.SEED_DEMO !== 'false') {
       await seedDemo(m);
       await seedTeamDemo(m);

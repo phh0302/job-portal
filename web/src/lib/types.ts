@@ -19,6 +19,14 @@ export interface CompanyCard {
   logoUrl: string | null;
   verified: boolean;
   location?: string | null;
+  /** Chỉ số phản hồi ứng viên (null = chưa đủ dữ liệu) */
+  response?: ResponseInfo | null;
+}
+
+export interface ResponseInfo {
+  rate: number;
+  avgHours: number | null;
+  fast: boolean;
 }
 
 export interface JobCard {

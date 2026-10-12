@@ -34,6 +34,13 @@ export class EmployerApplicationsQuery extends PaginationDto {
   @IsString()
   @MaxLength(100)
   q?: string;
+
+  /** Chỉ hồ sơ chờ phản hồi quá 3 ngày */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @IsBoolean()
+  pending?: boolean;
 }
 
 export class InterviewDto {

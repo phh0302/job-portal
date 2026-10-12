@@ -29,7 +29,7 @@ function setup(o: { role?: CompanyRole; company?: Record<string, unknown>; job?:
   const employers = { findOne: async () => profile, find: async () => [{ userId: 10 }] };
   const unlocks = { existsBy: jest.fn(async () => false), insert: jest.fn() };
   const candidates = { findOne: async () => ({ id: 7, user: { status: 'ACTIVE' } }) };
-  const settings = { all: async () => ({ paymentBankName: 'VCB', paymentAccountNo: '1', paymentAccountName: 'X' }) };
+  const settings = { all: async () => ({ paymentBankName: 'VCB', paymentAccountNo: '1', paymentAccountName: 'X', paymentBankCode: 'VCB' }) };
   const notifications = { create: jest.fn(), notifyAdmins: jest.fn() };
   const audit = { log: jest.fn() };
   const svc = new BillingService(ds as never, plans as never, orders as never, companies as never, employers as never, jobs as never, unlocks as never, candidates as never, settings as never, notifications as never, audit as never);

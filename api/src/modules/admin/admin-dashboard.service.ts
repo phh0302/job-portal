@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { CompanyVerification, JobStatus, OrderStatus, ReportStatus, ReviewStatus, UserRole } from '../../common/enums';
-import { todayVN } from '../../common/utils/date';
+import { CompanyVerification, JobStatus, OrderStatus, ReportStatus, ReviewStatus, SupportStatus, UserRole } from '../../common/enums';
+import { sqlToVN, todayVN } from '../../common/utils/date';
 import { Application } from '../applications/entities/application.entity';
 import { Company } from '../companies/entities/company.entity';
 import { Job } from '../jobs/entities/job.entity';
 import { Report } from '../reports/entities/report.entity';
 import { CompanyReview } from '../reviews/entities/company-review.entity';
 import { PlanOrder } from '../billing/entities/plan-order.entity';
+import { SupportTicket } from '../support/entities/support-ticket.entity';
 import { User } from '../users/entities/user.entity';
 
 type Count = { k: string; cnt: number };
@@ -21,7 +22,7 @@ export class AdminDashboardService {
       const rows: Count[] = await this.ds.getRepository(entity).createQueryBuilder('t').select(`t.${col}`, 'k').addSelect('COUNT(*)', 'cnt').groupBy(`t.${col}`).getRawMany();
       return Object.fromEntries(rows.map((r) => [r.k, Number(r.cnt)]));
     };
-    const [users, companies, jobs, applications, openReports, openJobs, pendingReviews, pendingOrders] = await Promise.all([
+    const [users, companies, jobs, applications, openReports, openJobs, pendingReviews, pendingOrders, pendingSupport] = await Promise.all([
       group(User, 'role'),
       group(Company, 'verification_status'),
       group(Job, 'status'),
@@ -34,6 +35,12 @@ export class AdminDashboardService {
         .getCount(),
       this.ds.getRepository(CompanyReview).countBy({ status: ReviewStatus.PENDING }),
       this.ds.getRepository(PlanOrder).countBy({ status: OrderStatus.PENDING }),
+      this.ds
+        .getRepository(SupportTicket)
+        .createQueryBuilder('t')
+        .where('t.status IN (:...st)', { st: [SupportStatus.WAITING, SupportStatus.OPEN] })
+        .andWhere('(t.admin_read_at IS NULL OR t.admin_read_at < t.last_message_at)')
+        .getCount(),
     ]);
     const sum = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
     return {
@@ -47,6 +54,7 @@ export class AdminDashboardService {
         openReports,
         pendingReviews,
         pendingOrders,
+        pendingSupport,
       },
     };
   }
@@ -70,7 +78,7 @@ export class AdminDashboardService {
       }
     }
     const from = new Date(`${period === 'day' ? keys[0] : `${keys[0]}-01`}T00:00:00+07:00`);
-    const expr = period === 'day' ? 'CONVERT(char(10), DATEADD(hour, 7, t.created_at), 23)' : 'CONVERT(char(7), DATEADD(hour, 7, t.created_at), 23)';
+    const expr = `CONVERT(char(${period === 'day' ? 10 : 7}), ${sqlToVN('t.created_at')}, 23)`;
 
     const series = async (entity: typeof User | typeof Job | typeof Application) => {
       const rows: Count[] = await this.ds

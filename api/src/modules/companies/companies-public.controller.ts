@@ -1,3 +1,4 @@
+import { responseInfo } from '../../common/utils/response-stats';
 import { Controller, Get, NotFoundException, Param, Query } from '@nestjs/common';
 import { ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -92,6 +93,7 @@ export class CompaniesPublicController {
       slug: c.slug,
       logoUrl: this.storage.publicUrl(c.logoUrl),
       location: c.location?.name ?? null,
+      response: responseInfo(c),
       verified: c.verificationStatus === 'VERIFIED',
     };
   }

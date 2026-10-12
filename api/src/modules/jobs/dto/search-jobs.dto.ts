@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsEnum, IsIn, IsInt, IsOptional, IsString, MaxLength, Min, IsBoolean } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { JobLevel, JobType } from '../../../common/enums';
 
@@ -56,6 +56,12 @@ export class SearchJobsDto extends PaginationDto {
   @Type(() => Number)
   @IsInt()
   companyId?: number;
+
+  @ApiPropertyOptional({ description: 'Chỉ nhà tuyển dụng phản hồi nhanh (≥ 80% hồ sơ, trung bình ≤ 3 ngày)' })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @IsBoolean()
+  fastResponse?: boolean;
 
   @ApiPropertyOptional({ enum: JOB_SORTS, default: 'newest' })
   @IsOptional()

@@ -108,6 +108,10 @@ function appsSetup(app: Record<string, unknown> | null) {
     findOne: jest.fn(async () => (store ? { ...store } : null)),
     update: jest.fn(async (_id: number, patch: Record<string, unknown>) => Object.assign(store!, patch)),
     manager: { findOneOrFail: async () => ({ userId: 70, fullName: 'An', user: { email: 'an@x.vn' } }) },
+    createQueryBuilder: () => {
+      const qb = { update: () => qb, set: () => qb, where: () => qb, execute: async () => Object.assign(store!, { respondedAt: new Date() }) };
+      return qb;
+    },
   };
   const notifications = { notifyApplicationStatus: jest.fn() };
   const fileTokens = { sign: jest.fn(() => ({ url: '/api/files/signed/x', expiresAt: '' })) };
@@ -142,6 +146,7 @@ describe('EmployerApplicationsService – quyền & luồng trạng thái', () =
   it('mời phỏng vấn: đổi trạng thái + báo ứng viên kèm lịch', async () => {
     const { service, store, notifications } = appsSetup(myApp(ApplicationStatus.VIEWED));
     await service.updateStatus(1, 9, { status: ApplicationStatus.INTERVIEW, interview: { time: '9h', location: 'VP' } });
+    expect(store!.respondedAt).toBeInstanceOf(Date);
     expect(store!.status).toBe(ApplicationStatus.INTERVIEW);
     expect(notifications.notifyApplicationStatus).toHaveBeenCalledWith(
       expect.objectContaining({ userId: 70, status: ApplicationStatus.INTERVIEW, interview: { time: '9h', location: 'VP' } }),

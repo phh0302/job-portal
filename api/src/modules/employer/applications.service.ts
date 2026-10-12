@@ -11,6 +11,8 @@ import { FileTokenService } from '../storage/file-token.service';
 import { StorageService } from '../storage/storage.service';
 import { EmployerApplicationsQuery, UpdateApplicationStatusDto } from './dto/application.dto';
 import { EmployerContext } from './employer-context.service';
+import { markResponded } from '../applications/mark-responded';
+import { RESPONSE_REMIND_DAYS, RESPONSE_STATUSES } from '../../common/utils/response-stats';
 
 /** Luồng trạng thái hợp lệ (NTD) */
 const NEXT: Record<ApplicationStatus, ApplicationStatus[]> = {
@@ -43,6 +45,9 @@ export class EmployerApplicationsService {
       .where('j.company_id = :cid', { cid: company.id });
     if (q.jobId) qb.andWhere('a.job_id = :jid', { jid: q.jobId });
     if (q.status) qb.andWhere('a.status = :st', { st: q.status });
+    if (q.pending) {
+      qb.andWhere(`a.responded_at IS NULL AND a.status IN ('SUBMITTED', 'VIEWED') AND a.created_at < DATEADD(day, -${RESPONSE_REMIND_DAYS}, GETDATE())`);
+    }
     if (q.q) qb.andWhere('c.full_name LIKE :kw', { kw: `%${q.q.replace(/[[\]%_]/g, (ch) => `[${ch}]`)}%` });
 
     const [rows, total] = await qb
@@ -124,6 +129,7 @@ export class EmployerApplicationsService {
 
   private async changeStatus(a: Application, dto: Partial<UpdateApplicationStatusDto> & { status: ApplicationStatus }) {
     await this.apps.update(a.id, { status: dto.status, statusChangedAt: new Date() });
+    if ((RESPONSE_STATUSES as readonly string[]).includes(dto.status)) await markResponded(this.apps, a.id);
     const c = await this.apps.manager.findOneOrFail(CandidateProfile, { where: { id: a.candidateId }, relations: { user: true } });
     await this.notifications.notifyApplicationStatus({
       userId: c.userId,

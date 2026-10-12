@@ -96,7 +96,7 @@ export class BillingService {
         featuredCredits: c.featuredCredits,
         contactCredits: c.contactCredits,
       },
-      bank: { bankName: s.paymentBankName, accountNo: s.paymentAccountNo, accountName: s.paymentAccountName },
+      bank: { bankName: s.paymentBankName, bankCode: s.paymentBankCode, accountNo: s.paymentAccountNo, accountName: s.paymentAccountName },
       featureDays: FEATURE_DAYS,
       orders: orders.map((o) => this.orderView(o)),
     };

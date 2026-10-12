@@ -19,6 +19,7 @@ const INVALIDATE: Record<string, string[][]> = {
   COMPANY_VERIFIED: [['employer', 'me']],
   COMPANY_REJECTED: [['employer', 'me']],
   NEW_MESSAGE: [['messages']],
+  SUPPORT: [['support'], ['admin', 'support'], ['admin', 'overview']],
   ORDER_PAID: [['employer', 'billing']],
   ORDER_CANCELLED: [['employer', 'billing']],
   REVIEW_APPROVED: [['reviews']],
@@ -67,6 +68,11 @@ export function useRealtimeNotifications(enabled: boolean) {
         // Tin nhắn chat: làm mới hộp thư / cuộc trò chuyện đang mở (không toast từng tin)
         es.addEventListener('message', () => {
           qc.invalidateQueries({ queryKey: ['messages'] });
+        });
+        // Hỗ trợ khách hàng: cập nhật khung chat của người dùng / trang hỗ trợ của admin
+        es.addEventListener('support', () => {
+          qc.invalidateQueries({ queryKey: ['support'] });
+          qc.invalidateQueries({ queryKey: ['admin', 'support'] });
         });
         es.onerror = () => {
           // Token chỉ dùng để mở kết nối -> đóng và xin token mới thay vì để EventSource tự thử lại

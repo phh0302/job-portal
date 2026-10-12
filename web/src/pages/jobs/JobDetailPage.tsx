@@ -7,7 +7,8 @@ import JobCard from '../../components/JobCard';
 import ReportButton from '../../components/ReportButton';
 import RichText, { plainToHtml, stripHtml } from '../../components/RichText';
 import SaveJobButton from '../../components/SaveJobButton';
-import { Button } from '../../components/ui';
+import { Alert, Button } from '../../components/ui';
+import { toast } from '../../components/Toast';
 import { api, errorMessage } from '../../lib/api';
 import {
   APPLICATION_STATUS,
@@ -22,6 +23,8 @@ import {
 import type { JobCard as Job, JobDetail } from '../../lib/types';
 import { useSeo } from '../../lib/seo';
 import ApplyModal from './ApplyModal';
+import { useQuickApply } from '../../lib/quickApply';
+import ResponseBadge from '../../components/ResponseBadge';
 import { DetailSkeleton } from '../../components/Skeleton';
 
 function Section({ title, text }: { title: string; text: string | null }) {
@@ -79,6 +82,7 @@ export default function JobDetailPage() {
     queryKey: ['job', slug, user?.id],
     queryFn: async () => (await api.get<JobDetail>(`/jobs/${slug}`)).data,
   });
+  const quick = useQuickApply(job?.id ?? 0, slug);
   const { data: similar } = useQuery({
     queryKey: ['job', slug, 'similar'],
     queryFn: async () => (await api.get<Job[]>(`/jobs/${slug}/similar`)).data,
@@ -107,6 +111,14 @@ export default function JobDetailPage() {
       </div>
     );
 
+  function onQuickApply() {
+    if (!user) return navigate('/login', { state: { from: location.pathname } });
+    quick.mutate(undefined, {
+      onSuccess: (r) =>
+        toast(r.generated ? 'Đã tạo CV từ hồ sơ và nộp hồ sơ thành công!' : `Đã nộp hồ sơ bằng CV "${r.resumeName}"`),
+    });
+  }
+
   function onApplyClick() {
     if (!user) return navigate('/login', { state: { from: location.pathname } });
     setApplyOpen(true);
@@ -129,9 +141,22 @@ export default function JobDetailPage() {
     ) : job.myApplication ? (
       <p className="text-sm text-slate-500">Bạn đã rút đơn ứng tuyển vị trí này.</p>
     ) : (
-      <Button onClick={onApplyClick} className="w-full sm:w-auto">
-        Ứng tuyển ngay
-      </Button>
+      <div className="flex w-full flex-col gap-2 sm:w-auto">
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={onQuickApply} loading={quick.isPending} className="w-full sm:w-auto" title="Nộp ngay bằng CV mặc định, không cần điền gì thêm">
+            ⚡ Ứng tuyển 1 chạm
+          </Button>
+          <Button variant="outline" onClick={onApplyClick} disabled={quick.isPending} className="w-full sm:w-auto">
+            Chọn CV / viết thư giới thiệu
+          </Button>
+        </div>
+        {quick.isError && (
+          <Alert type="error">
+            {errorMessage(quick.error)}{' '}
+            <Link to="/candidate/cv-builder" className="font-medium underline">Tạo CV online</Link>
+          </Alert>
+        )}
+      </div>
     );
 
   const info: [string, string][] = [
@@ -210,6 +235,9 @@ export default function JobDetailPage() {
                 </div>
               )}
             </dl>
+            <div className="mt-3">
+              <ResponseBadge info={job.company.response} />
+            </div>
             <Link to={`/companies/${job.company.slug}`} className="mt-3 inline-block text-sm text-brand-600 hover:underline">
               Xem trang công ty →
             </Link>

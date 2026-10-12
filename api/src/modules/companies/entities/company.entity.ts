@@ -64,6 +64,23 @@ export class Company extends BaseEntity {
   @Column({ name: 'verified_at', type: 'datetime2', nullable: true })
   verifiedAt!: Date | null;
 
+  // ----- Chỉ số phản hồi ứng viên (tính lại mỗi giờ, 90 ngày gần nhất) -----
+  /** % hồ sơ được phản hồi (null = chưa có dữ liệu) */
+  @Column({ name: 'response_rate', type: 'tinyint', nullable: true })
+  responseRate!: number | null;
+
+  /** Thời gian phản hồi trung bình (giờ) */
+  @Column({ name: 'avg_response_hours', type: 'int', nullable: true })
+  avgResponseHours!: number | null;
+
+  /** Số hồ sơ dùng để tính (ít quá thì không hiển thị công khai) */
+  @Column({ name: 'response_sample', type: 'int', default: 0 })
+  responseSample!: number;
+
+  /** Lần cuối nhắc NTD về hồ sơ chờ phản hồi lâu */
+  @Column({ name: 'response_reminded_at', type: 'datetime2', nullable: true })
+  responseRemindedAt!: Date | null;
+
   // ----- Gói dịch vụ -----
   /** Tên gói đang dùng (null = miễn phí) */
   @Column({ name: 'plan_name', type: 'nvarchar', length: 100, nullable: true })

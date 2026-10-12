@@ -209,4 +209,7 @@
 - [x] Chat giữa NTD và ứng viên _(theo đơn ứng tuyển, NTD nhắn trước, realtime SSE)_
 - [x] Gói dịch vụ trả phí cho NTD (tin nổi bật, tìm hồ sơ) + thanh toán _(thanh toán giả lập: admin xác nhận chuyển khoản)_
 - [x] Đánh giá công ty _(admin duyệt, chủ công ty phản hồi)_
+- [x] Chỉ số phản hồi của NTD (tỉ lệ, thời gian TB, nhãn "⚡ Phản hồi nhanh", bộ lọc, nhắc hồ sơ chờ > 3 ngày)
+- [x] Ứng tuyển 1 chạm (CV mặc định; chưa có CV → tự tạo từ hồ sơ)
+- [x] Hỗ trợ khách hàng: trợ lý tự động (AI Claude / FAQ) trả lời trước, chuyển nhân viên (admin) chat trực tiếp
 - [ ] Đa ngôn ngữ (Việt / Anh)

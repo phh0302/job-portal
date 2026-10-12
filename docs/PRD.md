@@ -97,6 +97,9 @@ Mức ưu tiên: **P0** = bắt buộc cho MVP · **P1** = nên có · **P2** = 
 | CAN-13 | **Việc làm gợi ý bằng AI**: xếp hạng theo % phù hợp (kỹ năng, chức danh, ngành quan tâm, địa điểm, kinh nghiệm, lương), hiện kỹ năng đã có / còn thiếu, cách tính điểm; nhận xét & gợi ý cải thiện do Claude viết (tùy chọn) | P1 | ✅ |
 | CAN-14 | **Tạo CV online** từ hồ sơ: 3 mẫu (Hiện đại / Cổ điển / Tối giản), chọn màu, ảnh, ngày sinh, mục bổ sung (chứng chỉ, ngoại ngữ, sở thích); xem trước PDF, tải PDF, **lưu vào "CV của tôi"** để ứng tuyển | P2 | ✅ |
 | CAN-15 | **Tin nhắn** với NTD trong từng đơn ứng tuyển (trả lời khi NTD nhắn trước), realtime, đánh dấu chưa đọc | P2 | ✅ |
+| CAN-17 | **Ứng tuyển 1 chạm**: nộp ngay bằng CV mặc định; chưa có CV thì tự tạo CV PDF từ hồ sơ rồi nộp | P1 | ✅ |
+| CAN-18 | Xem **chỉ số phản hồi** của NTD trên tin & trang công ty; lọc "Chỉ NTD phản hồi nhanh" | P1 | ✅ |
+| ALL-01 | **Nút hỗ trợ** góc phải mọi trang: khách tra cứu FAQ; ứng viên/NTD chat với trợ lý tự động (Claude dựa trên FAQ, không có API key → tìm FAQ theo từ khoá), bấm "Gặp nhân viên" hoặc trợ lý tự chuyển khi cần xử lý tài khoản | P1 | ✅ |
 | CAN-16 | **Đánh giá công ty**: 1–5 sao, tiêu đề, điểm tốt / chưa tốt, quan hệ với công ty, ẩn danh (mặc định); cần xác minh email; 1 đánh giá / công ty, sửa → duyệt lại | P2 | ✅ |
 
 **Tiêu chí chấp nhận (CAN-07)**
@@ -120,6 +123,7 @@ Mức ưu tiên: **P0** = bắt buộc cho MVP · **P1** = nên có · **P2** = 
 | EMP-09 | Tìm hồ sơ ứng viên công khai theo từ khóa, kỹ năng, tỉnh, KN tối thiểu | P2 | ✅ |
 | EMP-10 | Tổng quan: tin đang tuyển, lượt xem, tổng đơn, đơn chưa xem, biểu đồ số đơn 30 ngày, phễu chuyển đổi, top 5 tin | P1 | ✅ |
 | EMP-11 | Nhiều tài khoản NTD cùng một công ty (mời đồng nghiệp) | P2 | ✅ (chủ/thành viên, mời qua email, link 7 ngày) |
+| EMP-15 | **Chỉ số phản hồi** (90 ngày, cập nhật mỗi giờ): tỉ lệ & thời gian phản hồi TB; công khai khi ≥ 5 hồ sơ; nhãn "⚡ Phản hồi nhanh" (≥ 80%, ≤ 3 ngày); nhắc tối đa 1 lần/ngày khi có hồ sơ chờ > 3 ngày | P1 | ✅ |
 | EMP-12 | **Tin nhắn** với ứng viên trong đơn ứng tuyển (NTD mở cuộc trò chuyện); hộp thư chung cho cả đội tuyển dụng | P2 | ✅ |
 | EMP-13 | Xem đánh giá công ty, **phản hồi công khai** (chỉ chủ công ty) | P2 | ✅ |
 | EMP-14 | **Gói dịch vụ**: mua gói (thanh toán giả lập: chuyển khoản theo mã đơn, admin xác nhận); dùng lượt **đẩy tin nổi bật** 7 ngày và **mở liên hệ ứng viên** trong "Tìm hồ sơ" | P2 | ✅ |
@@ -143,6 +147,7 @@ Mức ưu tiên: **P0** = bắt buộc cho MVP · **P1** = nên có · **P2** = 
 | ADM-09 | Sửa trang tĩnh (Giới thiệu, Điều khoản, Chính sách bảo mật); banner trang chủ, thông báo chung | P1 | ✅ |
 | ADM-10 | Cấu hình hệ thống không cần sửa code (§5.5) | P1 | ✅ |
 | ADM-11 | Nhật ký thao tác admin (ai, lúc nào, IP, chi tiết), lọc theo loại | P1 | ✅ |
+| ADM-14 | **Hỗ trợ khách hàng**: hộp thư hỗ trợ (chờ nhân viên / đang hỗ trợ / chỉ trợ lý / đã đóng), trả lời realtime với câu trả lời mẫu, xem thông tin tài khoản; quản lý câu hỏi thường gặp làm kiến thức cho trợ lý | P1 | ✅ |
 | ADM-12 | Duyệt / từ chối / gỡ đánh giá công ty (bắt buộc lý do) | P2 | ✅ |
 | ADM-13 | Đơn mua gói: xác nhận đã thanh toán (kích hoạt gói, cộng lượt) / huỷ; sửa giá & quyền lợi gói; doanh thu tháng; cấu hình tài khoản nhận chuyển khoản | P2 | ✅ |
 

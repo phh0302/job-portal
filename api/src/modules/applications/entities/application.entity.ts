@@ -61,6 +61,13 @@ export class Application extends BaseEntity {
   @Column({ name: 'status_changed_at', type: 'datetime2', nullable: true })
   statusChangedAt!: Date | null;
 
+  /**
+   * Lần đầu NTD phản hồi (đổi sang Phù hợp / Phỏng vấn / Offer / Từ chối, hoặc nhắn tin).
+   * Ghi bằng GETDATE() của SQL Server để cùng mốc giờ với created_at.
+   */
+  @Column({ name: 'responded_at', type: 'datetime2', nullable: true })
+  respondedAt!: Date | null;
+
   /** Thời điểm tin nhắn gần nhất (null = chưa có cuộc trò chuyện) */
   @Index('IX_applications_last_message')
   @Column({ name: 'last_message_at', type: 'datetime2', nullable: true })
