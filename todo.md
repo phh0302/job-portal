@@ -212,4 +212,5 @@
 - [x] Chỉ số phản hồi của NTD (tỉ lệ, thời gian TB, nhãn "⚡ Phản hồi nhanh", bộ lọc, nhắc hồ sơ chờ > 3 ngày)
 - [x] Ứng tuyển 1 chạm (CV mặc định; chưa có CV → tự tạo từ hồ sơ)
 - [x] Hỗ trợ khách hàng: trợ lý tự động (AI Claude / FAQ) trả lời trước, chuyển nhân viên (admin) chat trực tiếp
+- [x] AI sàng lọc CV: điểm phù hợp, đối chiếu yêu cầu, điểm mạnh/thiếu, câu hỏi phỏng vấn; chấm hàng loạt; giới hạn lượt/ngày
 - [ ] Đa ngôn ngữ (Việt / Anh)

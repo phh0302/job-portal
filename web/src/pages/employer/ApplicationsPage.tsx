@@ -1,21 +1,54 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import Pagination from '../../components/Pagination';
 import Select from '../../components/Select';
-import { api } from '../../lib/api';
+import { api, errorMessage } from '../../lib/api';
 import { APPLICATION_STATUS, formatDate } from '../../lib/format';
 import type { Paginated } from '../../lib/types';
 import type { EmployerJobRow } from './types';
 import { ListSkeleton } from '../../components/Skeleton';
+import { Alert } from '../../components/ui';
+import { QUOTA_KEY, VERDICT, type ScreeningQuota, type Verdict } from '../../lib/screening';
+import { toast } from '../../components/Toast';
 
 interface Row {
   id: number;
   status: string;
   createdAt: string;
   hasNote: boolean;
+  ai: { score: number; verdict: Verdict } | null;
   job: { id: number; title: string };
   candidate: { fullName: string; headline: string | null; avatarUrl: string | null; location: string | null; yearsOfExperience: number };
+}
+
+/** Chấm hàng loạt các đơn chưa được AI chấm của 1 tin */
+function BatchScreen({ jobId }: { jobId: number }) {
+  const qc = useQueryClient();
+  const { data: quota } = useQuery({ queryKey: QUOTA_KEY, queryFn: async () => (await api.get<ScreeningQuota>('/employer/screening/quota')).data });
+  const run = useMutation({
+    mutationFn: async () => (await api.post<{ screened: number; remainingUnscreened: number }>(`/employer/jobs/${jobId}/screen-new`)).data,
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ['employer', 'applications'] });
+      qc.invalidateQueries({ queryKey: QUOTA_KEY });
+      toast(r.screened ? `Đã chấm ${r.screened} hồ sơ${r.remainingUnscreened ? `, còn ${r.remainingUnscreened} hồ sơ chưa chấm` : ''}` : 'Không còn hồ sơ nào chưa chấm');
+    },
+  });
+  if (!quota?.limit) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        onClick={() => run.mutate()}
+        disabled={run.isPending || !quota.remaining}
+        className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-50"
+        title="Chấm tối đa 5 hồ sơ chưa chấm mỗi lần"
+      >
+        {run.isPending ? 'Đang chấm…' : '🤖 AI chấm hồ sơ mới'}
+      </button>
+      <span className="text-xs text-slate-500">Còn {quota.remaining}/{quota.limit} lượt hôm nay</span>
+      {run.isError && <Alert type="error">{errorMessage(run.error)}</Alert>}
+    </div>
+  );
 }
 
 export default function ApplicationsPage() {
@@ -23,7 +56,7 @@ export default function ApplicationsPage() {
   const [kw, setKw] = useState(params.get('q') ?? '');
   useEffect(() => setKw(params.get('q') ?? ''), [params]);
   const page = Number(params.get('page') ?? 1);
-  const query = { jobId: params.get('jobId') || undefined, status: params.get('status') || undefined, q: params.get('q') || undefined, pending: params.get('pending') || undefined };
+  const query = { jobId: params.get('jobId') || undefined, status: params.get('status') || undefined, q: params.get('q') || undefined, pending: params.get('pending') || undefined, sort: params.get('sort') || undefined };
 
   const { data: jobs } = useQuery({
     queryKey: ['employer', 'jobs', 'all-for-filter'],
@@ -66,6 +99,19 @@ export default function ApplicationsPage() {
         </form>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={params.get('sort') ?? 'newest'}
+          onChange={(e) => setFilter('sort', e.target.value === 'newest' ? '' : e.target.value)}
+          options={[
+            { value: 'newest', label: 'Mới nhất' },
+            { value: 'ai', label: 'Điểm AI cao nhất' },
+          ]}
+          className="w-auto"
+        />
+        {params.get('jobId') && <BatchScreen jobId={Number(params.get('jobId'))} />}
+      </div>
+
       {isLoading ? (
         <ListSkeleton />
       ) : data && data.items.length ? (
@@ -90,6 +136,11 @@ export default function ApplicationsPage() {
                       </p>
                       <p className="text-xs text-slate-400">Ứng tuyển “{a.job.title}” ngày {formatDate(a.createdAt)}</p>
                     </div>
+                    {a.ai && (
+                      <span className={`rounded px-2 py-1 text-xs font-semibold ${VERDICT[a.ai.verdict].cls}`} title={`AI: ${VERDICT[a.ai.verdict].label}`}>
+                        🤖 {a.ai.score}
+                      </span>
+                    )}
                     <span className={`rounded px-2 py-1 text-xs font-medium ${st?.cls}`}>{a.status === 'SUBMITTED' ? 'Mới' : st?.label}</span>
                   </Link>
                 </li>

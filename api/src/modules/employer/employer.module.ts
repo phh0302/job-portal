@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ResponseStatsRunner } from './response-stats.runner';
 import { CandidateUnlock } from '../billing/entities/candidate-unlock.entity';
+import { CvScreening } from '../screening/entities/cv-screening.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Application } from '../applications/entities/application.entity';
 import { CandidateProfile } from '../candidates/entities/candidate-profile.entity';
@@ -25,7 +26,7 @@ import { EmployerTeamService } from './team.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EmployerProfile, Company, CompanyInvitation, User, Job, Application, CandidateProfile, Category, Skill, Location, CandidateUnlock]),
+    TypeOrmModule.forFeature([EmployerProfile, Company, CompanyInvitation, User, Job, Application, CandidateProfile, Category, Skill, Location, CandidateUnlock, CvScreening]),
   ],
   controllers: [EmployerController, EmployerTeamController, TeamInvitationPublicController],
   providers: [

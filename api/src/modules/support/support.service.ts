@@ -78,6 +78,8 @@ export class SupportService {
         this.tickets.create({ userId: user.id, status: SupportStatus.BOT, subject: body.replace(/\s+/g, ' ').slice(0, 200), lastMessageAt: now, userReadAt: now }),
       );
     }
+    // Admin đã đọc hết trước tin này chưa? (tính TRƯỚC khi lưu tin mới)
+    const adminHadRead = !t.adminReadAt || t.adminReadAt >= t.lastMessageAt;
     await this.addMessage(t, SupportSender.USER, body, user.id);
 
     if (t.status === SupportStatus.BOT) {
@@ -93,9 +95,8 @@ export class SupportService {
       }
     } else {
       // Đang chờ / đang chat với nhân viên → báo admin
-      const wasRead = !t.adminReadAt || t.adminReadAt >= t.lastMessageAt;
       await this.pushAdmins(t.id);
-      if (wasRead && t.assignedAdminId) {
+      if (adminHadRead && t.assignedAdminId) {
         await this.notifications.create({
           userId: t.assignedAdminId,
           type: NotificationType.SUPPORT,

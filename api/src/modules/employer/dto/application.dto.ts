@@ -41,6 +41,12 @@ export class EmployerApplicationsQuery extends PaginationDto {
   @Transform(({ value }) => value === true || value === 'true' || value === '1')
   @IsBoolean()
   pending?: boolean;
+
+  /** newest (mặc định) | ai = điểm AI chấm CV cao nhất trước */
+  @ApiPropertyOptional({ enum: ['newest', 'ai'] })
+  @IsOptional()
+  @IsIn(['newest', 'ai'])
+  sort?: 'newest' | 'ai';
 }
 
 export class InterviewDto {

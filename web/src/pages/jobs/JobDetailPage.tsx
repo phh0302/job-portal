@@ -150,6 +150,7 @@ export default function JobDetailPage() {
             Chọn CV / viết thư giới thiệu
           </Button>
         </div>
+        <p className="text-xs text-slate-500">Nhà tuyển dụng có thể dùng AI để hỗ trợ sàng lọc CV.</p>
         {quick.isError && (
           <Alert type="error">
             {errorMessage(quick.error)}{' '}

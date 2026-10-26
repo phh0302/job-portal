@@ -155,3 +155,10 @@ export enum FaqAudience {
   CANDIDATE = 'CANDIDATE',
   EMPLOYER = 'EMPLOYER',
 }
+
+/** Kết luận của AI khi chấm CV so với yêu cầu tin tuyển dụng */
+export enum ScreeningVerdict {
+  STRONG = 'STRONG',
+  POTENTIAL = 'POTENTIAL',
+  WEAK = 'WEAK',
+}

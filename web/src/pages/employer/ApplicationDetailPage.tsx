@@ -7,6 +7,7 @@ import { api, errorMessage } from '../../lib/api';
 import { APPLICATION_STATUS, formatDate } from '../../lib/format';
 import { getSignedUrl, openSignedFile } from '../../lib/files';
 import CandidateProfileView from './CandidateProfileView';
+import AiScreeningCard from './AiScreeningCard';
 import type { CandidateView } from './types';
 
 interface Detail {
@@ -149,6 +150,7 @@ export default function ApplicationDetailPage() {
         </div>
 
         <aside className="space-y-4">
+          <AiScreeningCard applicationId={app.id} withdrawn={app.status === 'WITHDRAWN'} />
           <section className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-sm text-slate-500">Ứng tuyển vị trí</p>
             <Link to={`/employer/jobs/${app.job.id}/edit`} className="font-semibold hover:text-brand-600">{app.job.title}</Link>

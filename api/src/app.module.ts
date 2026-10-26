@@ -29,6 +29,7 @@ import { MessagesModule } from './modules/messages/messages.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { SupportModule } from './modules/support/support.module';
+import { ScreeningModule } from './modules/screening/screening.module';
 import { User } from './modules/users/entities/user.entity';
 
 @Module({
@@ -57,6 +58,7 @@ import { User } from './modules/users/entities/user.entity';
     ReviewsModule,
     BillingModule,
     SupportModule,
+    ScreeningModule,
   ],
   providers: [
     // Thứ tự chạy: rate limit -> xác thực JWT -> phân quyền theo role

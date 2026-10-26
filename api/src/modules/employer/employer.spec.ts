@@ -115,7 +115,7 @@ function appsSetup(app: Record<string, unknown> | null) {
   };
   const notifications = { notifyApplicationStatus: jest.fn() };
   const fileTokens = { sign: jest.fn(() => ({ url: '/api/files/signed/x', expiresAt: '' })) };
-  const service = new EmployerApplicationsService(ctx as never, {} as never, notifications as never, fileTokens as never, apps as never);
+  const service = new EmployerApplicationsService(ctx as never, {} as never, notifications as never, fileTokens as never, apps as never, {} as never);
   jest.spyOn(service, 'detail').mockResolvedValue({} as never);
   return { service, store, notifications, fileTokens };
 }

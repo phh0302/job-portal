@@ -124,6 +124,7 @@ Mức ưu tiên: **P0** = bắt buộc cho MVP · **P1** = nên có · **P2** = 
 | EMP-10 | Tổng quan: tin đang tuyển, lượt xem, tổng đơn, đơn chưa xem, biểu đồ số đơn 30 ngày, phễu chuyển đổi, top 5 tin | P1 | ✅ |
 | EMP-11 | Nhiều tài khoản NTD cùng một công ty (mời đồng nghiệp) | P2 | ✅ (chủ/thành viên, mời qua email, link 7 ngày) |
 | EMP-15 | **Chỉ số phản hồi** (90 ngày, cập nhật mỗi giờ): tỉ lệ & thời gian phản hồi TB; công khai khi ≥ 5 hồ sơ; nhãn "⚡ Phản hồi nhanh" (≥ 80%, ≤ 3 ngày); nhắc tối đa 1 lần/ngày khi có hồ sơ chờ > 3 ngày | P1 | ✅ |
+| EMP-16 | **AI sàng lọc CV**: so CV (PDF/DOCX) + hồ sơ với yêu cầu tin → điểm 0–100, kết luận (Rất phù hợp / Có tiềm năng / Chưa phù hợp), đối chiếu từng yêu cầu kèm dẫn chứng, điểm mạnh / còn thiếu, câu hỏi phỏng vấn; chấm hàng loạt 5 đơn/lần, sắp xếp theo điểm AI; giới hạn lượt/công ty/ngày (admin cấu hình); không có AI → so khớp từ khoá. AI được yêu cầu bỏ qua tuổi, giới tính, ngoại hình, quê quán…; kết quả chỉ tham khảo | P1 | ✅ |
 | EMP-12 | **Tin nhắn** với ứng viên trong đơn ứng tuyển (NTD mở cuộc trò chuyện); hộp thư chung cho cả đội tuyển dụng | P2 | ✅ |
 | EMP-13 | Xem đánh giá công ty, **phản hồi công khai** (chỉ chủ công ty) | P2 | ✅ |
 | EMP-14 | **Gói dịch vụ**: mua gói (thanh toán giả lập: chuyển khoản theo mã đơn, admin xác nhận); dùng lượt **đẩy tin nổi bật** 7 ngày và **mở liên hệ ứng viên** trong "Tìm hồ sơ" | P2 | ✅ |

@@ -97,6 +97,9 @@ export default function ApplyModal({
             />
             <span className="text-xs text-slate-400">{coverLetter.length}/3000</span>
           </label>
+          <p className="text-xs text-slate-500">
+            CV và hồ sơ của bạn có thể được nhà tuyển dụng phân tích bằng công cụ AI để hỗ trợ sàng lọc; quyết định tuyển dụng do nhà tuyển dụng đưa ra.
+          </p>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
               Hủy

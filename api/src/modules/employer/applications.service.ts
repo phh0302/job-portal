@@ -12,6 +12,7 @@ import { StorageService } from '../storage/storage.service';
 import { EmployerApplicationsQuery, UpdateApplicationStatusDto } from './dto/application.dto';
 import { EmployerContext } from './employer-context.service';
 import { markResponded } from '../applications/mark-responded';
+import { CvScreening } from '../screening/entities/cv-screening.entity';
 import { RESPONSE_REMIND_DAYS, RESPONSE_STATUSES } from '../../common/utils/response-stats';
 
 /** Luồng trạng thái hợp lệ (NTD) */
@@ -33,6 +34,7 @@ export class EmployerApplicationsService {
     private readonly notifications: NotificationsService,
     private readonly fileTokens: FileTokenService,
     @InjectRepository(Application) private readonly apps: Repository<Application>,
+    @InjectRepository(CvScreening) private readonly screenings: Repository<CvScreening>,
   ) {}
 
   async list(userId: number, q: EmployerApplicationsQuery) {
@@ -50,14 +52,24 @@ export class EmployerApplicationsService {
     }
     if (q.q) qb.andWhere('c.full_name LIKE :kw', { kw: `%${q.q.replace(/[[\]%_]/g, (ch) => `[${ch}]`)}%` });
 
+    if (q.sort === 'ai') {
+      // Đơn đã được AI chấm xếp trước, điểm cao trước
+      qb.addSelect('(SELECT TOP 1 s.score FROM cv_screenings s WHERE s.application_id = a.id ORDER BY s.id DESC)', 'ai_score')
+        // SQL Server: NULL nhỏ nhất → DESC đưa đơn chưa chấm xuống cuối
+        .orderBy('ai_score', 'DESC')
+        .addOrderBy('a.created_at', 'DESC');
+    } else {
+      qb.orderBy('a.created_at', 'DESC');
+    }
     const [rows, total] = await qb
-      .orderBy('a.created_at', 'DESC')
       .offset((q.page - 1) * q.limit)
       .limit(q.limit)
       .getManyAndCount();
 
+    const ai = await this.latestScreenings(rows.map((a) => a.id));
     return paginate(
       rows.map((a) => ({
+        ai: ai.get(a.id) ?? null,
         id: a.id,
         status: a.status,
         createdAt: a.createdAt,
@@ -75,6 +87,19 @@ export class EmployerApplicationsService {
       q.page,
       q.limit,
     );
+  }
+
+  private async latestScreenings(ids: number[]) {
+    const map = new Map<number, { score: number; verdict: string }>();
+    if (!ids.length) return map;
+    const rows: { application_id: number; score: number; verdict: string }[] = await this.screenings
+      .createQueryBuilder('s')
+      .select(['s.application_id AS application_id', 's.score AS score', 's.verdict AS verdict'])
+      .where((sq) => `s.id IN ${sq.subQuery().select('MAX(x.id)').from(CvScreening, 'x').where('x.application_id IN (:...ids)').groupBy('x.application_id').getQuery()}`)
+      .setParameter('ids', ids)
+      .getRawMany();
+    for (const r of rows) map.set(Number(r.application_id), { score: Number(r.score), verdict: r.verdict });
+    return map;
   }
 
   /** Mở chi tiết đơn: tự chuyển SUBMITTED -> VIEWED */
