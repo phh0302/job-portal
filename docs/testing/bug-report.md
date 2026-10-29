@@ -19,6 +19,8 @@ Kết quả chi tiết từng TC: [`job-portal-testcases.xlsx`](job-portal-testc
 | BUG-10 | [Đăng tin] "Lưu nháp" đòi đủ trường bắt buộc như "Gửi duyệt" | Low | P3 | Closed – đúng thiết kế (PO giữ hành vi hiện tại) | TC-EMP03-002 |
 | BUG-11 | [Hệ thống] Body request quá 1MB trả 500 thay vì 413, không có X-Request-Id | Medium | P2 | Fixed – đã retest | TC-SEC-008 |
 | OBS-01 | [Phiên] 2 lần làm mới phiên gửi đồng thời với cùng refresh token đều thành công | Ghi nhận | – | Cần cân nhắc | TC-AUTH06-001 |
+| BUG-12 | [Hồ sơ] API nhận ngày sinh ở tương lai (web chặn nhưng API không) | Low | P3 | Fixed – đã retest | TC-CAN01-005 |
+| Q-02 | [Tìm việc] Chưa hỗ trợ tìm không dấu ("ke toan" không ra "Kế toán") | Câu hỏi PO | – | Cần quyết định | TC-CAN05-003 |
 | Q-01 | [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ | Câu hỏi PO | – | Đã chốt: không ẩn (đúng thiết kế) | TC-EMP14-010 |
 
 Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`, SQL Server 2022 trong Docker (`jobportal-sqlserver`), trình duyệt tích hợp của Claude desktop (Chromium bản mới), chưa có `ANTHROPIC_API_KEY`. Bản build khi phát hiện: `main @ 968dc5f`. Bản sửa: commit `68f5816` (BUG-01…08), retest 29/10/2026 – tất cả Pass. Ngày test: 29/10/2026. Người test: Claude.
@@ -159,6 +161,20 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 - **Rủi ro:** thấp – kẻ gian phải dùng token đúng cùng lúc với người dùng. Ngược lại, nhiều tab mở cùng lúc cũng có thể gửi refresh đồng thời; nếu chặn cứng sẽ đăng xuất nhầm người dùng.
 - **Gợi ý:** kiểm tra `affected` của câu `UPDATE … WHERE revoked_at IS NULL` (0 dòng = đã bị dùng) kèm khoảng ân hạn vài giây cho trường hợp nhiều tab. Chưa sửa – để quyết định khi rà soát bảo mật.
 
+## BUG-12 – [Hồ sơ] API nhận ngày sinh ở tương lai
+
+- **Liên quan:** TC-CAN01-005 · CAN-01
+- **Mức độ / Ưu tiên:** Low / P3 – giao diện đã chặn, chỉ lọt khi gọi API trực tiếp
+- **Các bước:** `PATCH /api/candidate/profile` với `dateOfBirth` = ngày mai.
+- **Thực tế:** 200, lưu 2026-10-30. Web chặn bằng zod (1940-01-01 … hôm nay) nhưng DTO API chỉ kiểm tra định dạng YYYY-MM-DD.
+- **Đã sửa:** thêm `BirthDateRule` (1940-01-01 … hôm nay giờ VN) vào `dateOfBirth` của DTO hồ sơ ứng viên. Retest: ngày mai / 1939-12-31 → 400 "Ngày sinh không hợp lệ"; 2000-05-20 → 200.
+
+## Q-02 – [Tìm việc] Chưa hỗ trợ tìm không dấu
+
+- **Liên quan:** TC-CAN05-003 · CAN-05
+- **Hiện tại:** tìm "ke toan" → 0 kết quả; "kế toán" → có tin. TC ghi "nếu không hỗ trợ, ghi nhận để PO quyết định".
+- **Câu hỏi:** có cần hỗ trợ tìm không dấu không? Người dùng Việt hay gõ không dấu trên điện thoại. Nếu cần: thêm cột tiêu đề/kỹ năng đã bỏ dấu (hoặc collation `Vietnamese_CI_AI` cho cột tìm kiếm) và bỏ dấu từ khoá trước khi so khớp.
+
 ## Q-01 – [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ
 
 - **Liên quan:** TC-EMP14-010 · EMP-09, EMP-14
@@ -178,3 +194,4 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 | 29/10/2026 | BUG-09, BUG-10, Q-01 | Lượt P0 còn lại (99 TC: 97 Pass, 1 Fail, 1 Blocked). BUG-09 sửa + retest Pass; BUG-10 chờ PO; Q-01 chốt không ẩn ngày sinh |
 | 29/10/2026 | BUG-10 | PO giữ hành vi hiện tại → Closed (đúng thiết kế); sửa TC-EMP03-002 |
 | 29/10/2026 | BUG-11, OBS-01 | P1 lượt 1 (bảo mật & quy tắc trạng thái, 22 TC Pass). BUG-11 sửa + retest; OBS-01 ghi nhận |
+| 29/10/2026 | BUG-12, Q-02 | P1 lượt 2 (Ứng viên, 31 TC Pass). BUG-12 sửa + retest; Q-02 chờ PO |
