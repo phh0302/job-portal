@@ -9,6 +9,7 @@ export const SETTING_DEFS = {
   jobMaxDays: { label: 'Hạn nộp tối đa khi đăng / gia hạn tin (ngày)', type: 'number', default: 90, min: 7, max: 365 },
   maxResumeMb: { label: 'Dung lượng CV tối đa (MB)', type: 'number', default: 5, min: 1, max: 20 },
   maxResumes: { label: 'Số CV tối đa mỗi ứng viên', type: 'number', default: 5, min: 1, max: 20 },
+  aiCvCheckPerDay: { label: 'Số lượt ứng viên tự kiểm tra CV với JD bằng AI / ngày (0 = tắt)', type: 'number', default: 5, min: 0, max: 100 },
   aiScreeningPerDay: { label: 'Số lượt AI chấm CV mỗi công ty / ngày (0 = tắt)', type: 'number', default: 20, min: 0, max: 1000 },
   maxJobAlerts: { label: 'Số thông báo việc làm tối đa mỗi ứng viên', type: 'number', default: 5, min: 1, max: 20 },
   homeBannerTitle: { label: 'Tiêu đề banner trang chủ', type: 'string', default: 'Tìm công việc phù hợp với bạn', max: 120 },

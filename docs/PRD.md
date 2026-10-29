@@ -99,6 +99,7 @@ Mức ưu tiên: **P0** = bắt buộc cho MVP · **P1** = nên có · **P2** = 
 | CAN-15 | **Tin nhắn** với NTD trong từng đơn ứng tuyển (trả lời khi NTD nhắn trước), realtime, đánh dấu chưa đọc | P2 | ✅ |
 | CAN-17 | **Ứng tuyển 1 chạm**: nộp ngay bằng CV mặc định; chưa có CV thì tự tạo CV PDF từ hồ sơ rồi nộp | P1 | ✅ |
 | CAN-18 | Xem **chỉ số phản hồi** của NTD trên tin & trang công ty; lọc "Chỉ NTD phản hồi nhanh" | P1 | ✅ |
+| CAN-19 | **Kiểm tra CV với JD (AI)**: trên trang tin, ứng viên chọn CV (hoặc chỉ hồ sơ) → % tương thích, kết luận, đối chiếu từng yêu cầu, điểm mạnh nên nhấn mạnh, việc cần cải thiện theo mức ưu tiên, gợi ý viết lại CV, từ khoá JD còn thiếu (không khuyên bịa kinh nghiệm); kết quả riêng tư; CV/JD không đổi trong 24h → dùng lại kết quả, không trừ lượt; giới hạn lượt/ngày (admin cấu hình `aiCvCheckPerDay`); không có AI → so khớp từ khoá | P1 | ✅ |
 | ALL-01 | **Nút hỗ trợ** góc phải mọi trang: khách tra cứu FAQ; ứng viên/NTD chat với trợ lý tự động (Claude dựa trên FAQ, không có API key → tìm FAQ theo từ khoá), bấm "Gặp nhân viên" hoặc trợ lý tự chuyển khi cần xử lý tài khoản | P1 | ✅ |
 | CAN-16 | **Đánh giá công ty**: 1–5 sao, tiêu đề, điểm tốt / chưa tốt, quan hệ với công ty, ẩn danh (mặc định); cần xác minh email; 1 đánh giá / công ty, sửa → duyệt lại | P2 | ✅ |
 

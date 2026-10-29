@@ -1,19 +1,16 @@
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { readFile } from 'fs/promises';
-import { extname } from 'path';
 import { Repository } from 'typeorm';
 import { ApplicationStatus } from '../../common/enums';
-import { htmlToPlainText } from '../../common/utils/rich-text';
 import { Application } from '../applications/entities/application.entity';
 import { CandidateProfile } from '../candidates/entities/candidate-profile.entity';
 import { EmployerProfile } from '../companies/entities/employer-profile.entity';
 import { SettingsService } from '../content/settings.service';
 import { Job } from '../jobs/entities/job.entity';
 import { StorageService } from '../storage/storage.service';
-import { docxToText } from './docx-text';
 import { CvScreening } from './entities/cv-screening.entity';
-import { AiCvScreener, CandidateBrief, CvContent, JobBrief, ScreeningResult, rulesScreen } from './screening.engine';
+import { readCv, toCandidateBrief, toJobBrief } from './briefs';
+import { AiCvScreener, ScreeningResult, rulesScreen } from './screening.engine';
 
 const BATCH_MAX = 5;
 
@@ -137,25 +134,9 @@ export class ScreeningService {
       this.jobs.findOneOrFail({ where: { id: a.jobId }, relations: { skills: true, categories: true } }),
       this.candidates.findOneOrFail({ where: { id: a.candidateId }, relations: { skills: true, experiences: true, educations: true } }),
     ]);
-    const jobBrief: JobBrief = {
-      title: job.title,
-      level: job.level,
-      experienceYears: job.experienceYears,
-      skills: (job.skills ?? []).map((s) => s.name),
-      categories: (job.categories ?? []).map((x) => x.name),
-      description: htmlToPlainText(job.description).slice(0, 6000),
-      requirements: htmlToPlainText(job.requirements).slice(0, 6000),
-    };
-    const cand: CandidateBrief = {
-      headline: c.headline,
-      summary: c.summary?.slice(0, 2000) ?? null,
-      yearsOfExperience: c.yearsOfExperience,
-      skills: (c.skills ?? []).map((s) => s.name),
-      experiences: (c.experiences ?? []).map((e) => ({ position: e.position, company: e.companyName, from: e.startDate, to: e.endDate, description: e.description?.slice(0, 800) ?? null })),
-      educations: (c.educations ?? []).map((e) => ({ school: e.school, degree: e.degree, major: e.major })),
-      coverLetter: a.coverLetter?.slice(0, 3000) ?? null,
-    };
-    const cv = await this.readCv(a.resumeFileUrl);
+    const jobBrief = toJobBrief(job);
+    const cand = toCandidateBrief(c, a.coverLetter);
+    const cv = await readCv(this.storage, a.resumeFileUrl);
     const cvText = cv.kind === 'text' ? cv.text : null;
 
     let result: ScreeningResult | null = null;
@@ -185,22 +166,6 @@ export class ScreeningService {
         model: result.model,
       }),
     );
-  }
-
-  /** PDF → gửi nguyên file cho AI; DOCX → lấy văn bản; DOC cũ / lỗi → không đọc được */
-  private async readCv(key: string): Promise<CvContent> {
-    try {
-      const buf = await readFile(this.storage.fullPath(key));
-      const ext = extname(key).toLowerCase();
-      if (ext === '.pdf') return { kind: 'pdf', base64: buf.toString('base64') };
-      if (ext === '.docx') {
-        const text = docxToText(buf);
-        return text ? { kind: 'text', text } : { kind: 'none' };
-      }
-    } catch (err) {
-      this.logger.warn(`Không đọc được file CV ${key}: ${(err as Error).message}`);
-    }
-    return { kind: 'none' };
   }
 
   private view(s: CvScreening) {

@@ -38,3 +38,32 @@ export const REQ_STATUS: Record<ReqStatus, { icon: string; label: string; cls: s
 };
 
 export const QUOTA_KEY = ['employer', 'screening', 'quota'];
+
+// ---- Ứng viên tự kiểm tra CV với JD ----
+export type Priority = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface CvCheck {
+  id: number;
+  jobId: number;
+  resumeId: number | null;
+  matchPercent: number;
+  verdict: Verdict;
+  summary: string;
+  requirements: { requirement: string; status: ReqStatus; evidence: string | null }[];
+  strengths: string[];
+  improvements: { area: string; priority: Priority; suggestion: string }[];
+  cvRewriteTips: string[];
+  missingKeywords: string[];
+  cvReadable: boolean;
+  source: 'AI' | 'RULES';
+  createdAt: string;
+  cached?: boolean;
+}
+
+export const PRIORITY: Record<Priority, { label: string; cls: string }> = {
+  HIGH: { label: 'Ưu tiên cao', cls: 'bg-red-100 text-red-700' },
+  MEDIUM: { label: 'Nên làm', cls: 'bg-amber-100 text-amber-800' },
+  LOW: { label: 'Thêm điểm cộng', cls: 'bg-slate-100 text-slate-700' },
+};
+
+export const CV_CHECK_QUOTA_KEY = ['candidate', 'cv-check', 'quota'];

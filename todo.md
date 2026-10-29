@@ -213,4 +213,6 @@
 - [x] Ứng tuyển 1 chạm (CV mặc định; chưa có CV → tự tạo từ hồ sơ)
 - [x] Hỗ trợ khách hàng: trợ lý tự động (AI Claude / FAQ) trả lời trước, chuyển nhân viên (admin) chat trực tiếp
 - [x] AI sàng lọc CV: điểm phù hợp, đối chiếu yêu cầu, điểm mạnh/thiếu, câu hỏi phỏng vấn; chấm hàng loạt; giới hạn lượt/ngày
+- [x] Ứng viên kiểm tra CV với JD bằng AI: % tương thích, việc cần cải thiện, gợi ý viết lại CV, từ khoá thiếu; cache 24h; giới hạn lượt/ngày
+- [ ] Chạy `scripts\cap-nhat-db.cmd` để tạo bảng `cv_screenings`, `cv_job_checks`
 - [ ] Đa ngôn ngữ (Việt / Anh)

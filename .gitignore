@@ -21,3 +21,4 @@ scripts/e2e-ket-qua.txt
 # Công cụ chạy cục bộ
 ngrok.exe
 *.tsbuildinfo
+api/test/fixtures/cv/*.tgz

@@ -23,6 +23,7 @@ import {
 import type { JobCard as Job, JobDetail } from '../../lib/types';
 import { useSeo } from '../../lib/seo';
 import ApplyModal from './ApplyModal';
+import CvCheckModal from './CvCheckModal';
 import { useQuickApply } from '../../lib/quickApply';
 import ResponseBadge from '../../components/ResponseBadge';
 import { DetailSkeleton } from '../../components/Skeleton';
@@ -77,6 +78,7 @@ export default function JobDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [applyOpen, setApplyOpen] = useState(false);
+  const [checkOpen, setCheckOpen] = useState(false);
 
   const { data: job, isLoading, error } = useQuery({
     queryKey: ['job', slug, user?.id],
@@ -123,6 +125,12 @@ export default function JobDetailPage() {
     if (!user) return navigate('/login', { state: { from: location.pathname } });
     setApplyOpen(true);
   }
+
+  function onCheckClick() {
+    if (!user) return navigate('/login', { state: { from: location.pathname } });
+    setCheckOpen(true);
+  }
+  const canApply = !job.myApplication;
 
   const status = job.myApplication ? APPLICATION_STATUS[job.myApplication.status] : null;
   const applyArea =
@@ -211,6 +219,15 @@ export default function JobDetailPage() {
         </div>
 
         <aside className="space-y-4">
+          {(!user || user.role === 'CANDIDATE') && (
+            <div className="rounded-xl border border-blue-200 bg-brand-50 p-5">
+              <p className="font-semibold">🎯 CV của bạn hợp JD này bao nhiêu %?</p>
+              <p className="mt-1 text-sm text-slate-600">AI so CV với yêu cầu tuyển dụng và chỉ ra điểm cần cải thiện trước khi nộp. Chỉ bạn xem được kết quả.</p>
+              <Button variant="outline" onClick={onCheckClick} className="mt-3 w-full">
+                Kiểm tra CV với JD (AI)
+              </Button>
+            </div>
+          )}
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <div className="flex items-center gap-3">
               <CompanyLogo name={job.company.name} url={job.company.logoUrl} size={56} />
@@ -265,7 +282,17 @@ export default function JobDetailPage() {
       )}
 
       {user?.role === 'CANDIDATE' && (
-        <ApplyModal open={applyOpen} onClose={() => setApplyOpen(false)} jobId={job.id} jobTitle={job.title} slug={slug} />
+        <>
+          <ApplyModal open={applyOpen} onClose={() => setApplyOpen(false)} jobId={job.id} jobTitle={job.title} slug={slug} />
+          <CvCheckModal
+            open={checkOpen}
+            onClose={() => setCheckOpen(false)}
+            jobId={job.id}
+            jobTitle={job.title}
+            canApply={canApply}
+            onApply={() => setApplyOpen(true)}
+          />
+        </>
       )}
     </div>
   );
