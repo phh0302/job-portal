@@ -10,6 +10,7 @@ import { toast } from '../../components/Toast';
 import { Alert, Button, Field } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api';
 import { useCategories, useLocations, useSkills } from '../../lib/catalog';
+import { useSelectSync } from '../../lib/useSelectSync';
 import { JOB_TYPE_LABEL, LEVEL_LABEL } from '../../lib/format';
 import { JOB_STATUS, StatusBadge } from '../../lib/status';
 import { makeJobSchema, type JobFormValues } from '../../lib/schemas';
@@ -33,6 +34,8 @@ function JobForm({ job, defaultDays, maxDays }: { job?: EmployerJobDetail; defau
     control,
     handleSubmit,
     watch,
+    getValues,
+    setValue,
     formState: { errors, dirtyFields },
   } = useForm<JobFormValues>({
     resolver: zodResolver(schema),
@@ -56,6 +59,7 @@ function JobForm({ job, defaultDays, maxDays }: { job?: EmployerJobDetail; defau
       skillIds: job?.skillIds ?? [],
     },
   });
+  useSelectSync(getValues, setValue, 'locationId', !!locations);
   const negotiable = watch('salaryNegotiable');
 
   const save = useMutation({

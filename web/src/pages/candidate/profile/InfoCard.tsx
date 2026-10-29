@@ -8,6 +8,7 @@ import Select from '../../../components/Select';
 import { Alert, Button, Field } from '../../../components/ui';
 import { api, errorMessage } from '../../../lib/api';
 import { useLocations } from '../../../lib/catalog';
+import { useSelectSync } from '../../../lib/useSelectSync';
 import { candidateInfoSchema } from '../../../lib/schemas';
 import { PROFILE_KEY, type CandidateProfile } from '../types';
 
@@ -18,7 +19,7 @@ export default function InfoCard({ profile }: { profile: CandidateProfile }) {
   const { reloadUser } = useAuth();
   const { data: locations } = useLocations();
   const fileRef = useRef<HTMLInputElement>(null);
-  const { register, handleSubmit, formState: { errors } } = useForm<InfoValues>({
+  const { register, handleSubmit, getValues, setValue, formState: { errors } } = useForm<InfoValues>({
     resolver: zodResolver(candidateInfoSchema),
     mode: 'onTouched',
     defaultValues: {
@@ -33,6 +34,7 @@ export default function InfoCard({ profile }: { profile: CandidateProfile }) {
       summary: profile.summary ?? '',
     },
   });
+  useSelectSync(getValues, setValue, 'locationId', !!locations);
 
   const save = useMutation({
     mutationFn: async (v: InfoValues) =>

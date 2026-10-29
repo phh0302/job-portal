@@ -10,6 +10,7 @@ import { Alert, Button, Field } from '../../components/ui';
 import { EMPLOYER_ME_KEY } from '../../layouts/EmployerLayout';
 import { api, errorMessage } from '../../lib/api';
 import { useLocations } from '../../lib/catalog';
+import { useSelectSync } from '../../lib/useSelectSync';
 import { COMPANY_SIZE_LABEL } from '../../lib/format';
 import { companySchema } from '../../lib/schemas';
 import { StatusBadge, VERIFY_STATUS } from '../../lib/status';
@@ -27,7 +28,7 @@ function CompanyForm({ company, readOnly = false }: { company: EmployerCompany |
   const qc = useQueryClient();
   const { data: locations } = useLocations();
   const locked = company?.verificationStatus === 'VERIFIED' || company?.verificationStatus === 'PENDING';
-  const { register, handleSubmit, formState: { errors } } = useForm<CompanyValues>({
+  const { register, handleSubmit, getValues, setValue, formState: { errors } } = useForm<CompanyValues>({
     resolver: zodResolver(companySchema),
     mode: 'onTouched',
     defaultValues: {
@@ -40,6 +41,7 @@ function CompanyForm({ company, readOnly = false }: { company: EmployerCompany |
       description: company?.description ?? '',
     },
   });
+  useSelectSync(getValues, setValue, 'locationId', !!locations);
 
   const save = useMutation({
     mutationFn: async (v: CompanyValues) => {
