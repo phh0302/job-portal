@@ -10,7 +10,7 @@ import { Job } from '../jobs/entities/job.entity';
 import { StorageService } from '../storage/storage.service';
 import { CvScreening } from './entities/cv-screening.entity';
 import { readCv, toCandidateBrief, toJobBrief } from './briefs';
-import { AiCvScreener, ScreeningResult, rulesScreen } from './screening.engine';
+import { AiCvScreener, ScreeningResult, cvPlainText, rulesScreen } from './screening.engine';
 
 const BATCH_MAX = 5;
 
@@ -137,7 +137,7 @@ export class ScreeningService {
     const jobBrief = toJobBrief(job);
     const cand = toCandidateBrief(c, a.coverLetter);
     const cv = await readCv(this.storage, a.resumeFileUrl);
-    const cvText = cv.kind === 'text' ? cv.text : null;
+    const cvText = cvPlainText(cv);
 
     let result: ScreeningResult | null = null;
     if (this.ai.enabled) {

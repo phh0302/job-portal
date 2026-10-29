@@ -29,7 +29,11 @@ export interface CandidateBrief {
   coverLetter: string | null;
 }
 
-export type CvContent = { kind: 'pdf'; base64: string } | { kind: 'text'; text: string } | { kind: 'none' };
+/** PDF: gửi nguyên file cho AI, kèm chữ trích được (`text`) để so khớp từ khoá khi chưa bật AI */
+export type CvContent = { kind: 'pdf'; base64: string; text: string } | { kind: 'text'; text: string } | { kind: 'none' };
+
+/** Văn bản CV dùng cho so khớp từ khoá (null = không đọc được) */
+export const cvPlainText = (cv: CvContent): string | null => (cv.kind === 'none' ? null : cv.text.trim() || null);
 
 export interface ScreeningResult {
   score: number;
@@ -52,16 +56,61 @@ export function verdictOf(score: number): ScreeningVerdict {
 
 // ======================= Chấm theo quy tắc (không cần AI) =======================
 
-/** Kỹ năng của tin có xuất hiện trong hồ sơ hoặc trong nội dung CV không (bỏ dấu, không phân biệt hoa thường) */
+/** Chuẩn hoá tên kỹ năng: bỏ dấu, chữ thường; giữ được C#, C++, .NET (nếu không sẽ thành "c") */
+const normSkill = (s: string) =>
+  normalizeVi(
+    s
+      .replace(/c#/gi, ' csharp ')
+      .replace(/c\+\+/gi, ' cpp ')
+      .replace(/\.net\b/gi, ' dotnet '),
+  );
+
+const JS_FRAMEWORKS = /^(react|vue|next|nuxt|express|nest|angular|node)$/;
+/** Dạng gọn để so sánh: "Node.js" = "nodejs", "React" = "ReactJS" = "react js" */
+const canonical = (n: string) => {
+  const c = n.replace(/ /g, '');
+  return JS_FRAMEWORKS.test(c) ? `${c}js` : c;
+};
+/** Các cách viết thường gặp của một kỹ năng */
+function variants(n: string): string[] {
+  const c = canonical(n);
+  const out = new Set([n, c]);
+  const base = c.replace(/js$/, '');
+  if (c.endsWith('js') && JS_FRAMEWORKS.test(base)) [base, `${base} js`].forEach((v) => out.add(v));
+  return [...out];
+}
+
+/** Kỹ năng được suy ra từ công nghệ khác có trong CV (vd. dùng NestJS ⇒ biết Node.js) */
+const IMPLIED: Record<string, string[]> = {
+  nodejs: ['nestjs', 'expressjs', 'nextjs', 'nuxtjs', 'fastify'],
+  javascript: ['typescript', 'reactjs', 'vuejs', 'angularjs', 'nodejs', 'nextjs'],
+  reactjs: ['nextjs', 'react native'],
+  python: ['django', 'fastapi', 'flask'],
+  csharp: ['dotnet', 'asp dotnet', 'aspnet', 'ef core', 'unity'],
+  java: ['spring', 'spring boot'],
+  php: ['laravel', 'symfony'],
+  sql: ['sql server', 'mysql', 'postgresql', 'postgres', 'sqlite', 'oracle', 'mssql'],
+  git: ['github', 'gitlab', 'bitbucket'],
+  docker: ['docker compose', 'kubernetes'],
+  restapi: ['restful', 'openapi', 'swagger'],
+};
+
+/** Kỹ năng của tin có xuất hiện trong hồ sơ hoặc trong nội dung CV không (bỏ dấu, không phân biệt hoa thường, nhận các cách viết khác) */
 export function rulesScreen(job: JobBrief, c: CandidateBrief, cvText: string | null): ScreeningResult {
-  const profileSkills = new Set(c.skills.map((s) => normalizeVi(s)));
-  const haystack = ` ${normalizeVi([cvText ?? '', c.headline ?? '', c.summary ?? '', ...c.experiences.map((e) => `${e.position} ${e.description ?? ''}`)].join(' '))} `;
+  const profileSkills = new Set(c.skills.map((s) => canonical(normSkill(s))));
+  const haystack = ` ${normSkill([cvText ?? '', c.headline ?? '', c.summary ?? '', ...c.experiences.map((e) => `${e.position} ${e.description ?? ''}`)].join(' '))} `;
+  const inProfile = (n: string) => profileSkills.has(canonical(n));
+  const inText = (n: string) => variants(n).some((v) => haystack.includes(` ${v} `));
 
   const requirements: RequirementCheck[] = job.skills.map((skill) => {
-    const n = normalizeVi(skill);
-    if (profileSkills.has(n)) return { requirement: `Kỹ năng ${skill}`, status: 'MET', evidence: 'Có trong mục kỹ năng của hồ sơ' };
-    if (n && haystack.includes(` ${n} `)) return { requirement: `Kỹ năng ${skill}`, status: 'MET', evidence: 'Được nhắc tới trong CV / kinh nghiệm' };
-    return { requirement: `Kỹ năng ${skill}`, status: 'MISSING', evidence: null };
+    const n = normSkill(skill);
+    const requirement = `Kỹ năng ${skill}`;
+    if (!n) return { requirement, status: 'UNKNOWN', evidence: null };
+    if (inProfile(n)) return { requirement, status: 'MET', evidence: 'Có trong mục kỹ năng của hồ sơ' };
+    if (inText(n)) return { requirement, status: 'MET', evidence: 'Được nhắc tới trong CV / kinh nghiệm' };
+    const via = (IMPLIED[canonical(n)] ?? []).find((t) => inProfile(t) || inText(t));
+    if (via) return { requirement, status: 'MET', evidence: `Suy ra từ "${via}" trong CV / hồ sơ` };
+    return { requirement, status: 'MISSING', evidence: null };
   });
 
   const need = job.experienceYears;

@@ -10,10 +10,13 @@ import { SettingsService } from '../content/settings.service';
 import { Job } from '../jobs/entities/job.entity';
 import { StorageService } from '../storage/storage.service';
 import { readCv, toCandidateBrief, toJobBrief } from './briefs';
+import { cvPlainText } from './screening.engine';
 import { AiCandidateChecker, CandidateCheckResult, rulesCandidateCheck } from './candidate-check.engine';
 import { CvJobCheck } from './entities/cv-job-check.entity';
 
 /** Kết quả trong vòng 24h cho cùng (tin, CV) và hồ sơ chưa đổi → trả lại, không tốn lượt */
+/** Tăng khi đổi cách chấm/đọc CV để không trả lại kết quả cũ từ cache */
+const ENGINE_VERSION = 2;
 const CACHE_MS = 24 * 3600_000;
 
 /**
@@ -74,7 +77,7 @@ export class CandidateCheckService {
     const jobBrief = toJobBrief(job);
     const cand = toCandidateBrief(p);
     const inputHash = createHash('sha256')
-      .update(JSON.stringify([jobBrief, cand, resume ? [resume.id, resume.fileUrl] : null, this.ai.enabled]))
+      .update(JSON.stringify([ENGINE_VERSION, jobBrief, cand, resume ? [resume.id, resume.fileUrl] : null, this.ai.enabled]))
       .digest('hex');
     // Cùng JD + hồ sơ + CV trong 24h → dùng lại kết quả, không tốn lượt
     const recent = await this.checks.findOne({
@@ -96,7 +99,7 @@ export class CandidateCheckService {
         this.logger.warn(`AI kiểm tra CV lỗi, dùng so khớp từ khoá: ${(err as Error).message}`);
       }
     }
-    result ??= rulesCandidateCheck(jobBrief, cand, cv.kind === 'text' ? cv.text : null);
+    result ??= rulesCandidateCheck(jobBrief, cand, cvPlainText(cv));
     if (resume && cv.kind === 'none') result.cvReadable = false;
 
     const saved = await this.checks.save(this.checks.create({ candidateId: p.id, jobId, resumeId: resume?.id ?? null, inputHash, score: result.matchPercent, result }));

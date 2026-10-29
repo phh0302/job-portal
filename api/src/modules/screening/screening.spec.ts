@@ -101,3 +101,29 @@ describe('AI', () => {
     expect(parseAiResult('không có json', 'm')).toBeNull();
   });
 });
+
+describe('So khớp kỹ năng – cách viết khác & kỹ năng suy ra', () => {
+  const base = { headline: null, summary: null, yearsOfExperience: 3, skills: [], experiences: [], educations: [], coverLetter: null };
+  const job = (skills: string[]) => ({ title: 'Dev', level: 'JUNIOR', experienceYears: 0, skills, categories: [], description: '', requirements: '' });
+  const status = (skills: string[], cv: string, profile: string[] = []) =>
+    Object.fromEntries(rulesScreen(job(skills), { ...base, skills: profile }, cv).requirements.map((r) => [r.requirement, [r.status, r.evidence]]));
+
+  it('Node.js / NodeJS / node js; React = ReactJS', () => {
+    const s = status(['Node.js', 'ReactJS'], 'Dùng NodeJS và React hằng ngày');
+    expect(s['Kỹ năng Node.js'][0]).toBe('MET');
+    expect(s['Kỹ năng ReactJS'][0]).toBe('MET');
+  });
+
+  it('NestJS ⇒ Node.js, PostgreSQL ⇒ SQL, GitHub ⇒ Git (ghi rõ suy ra từ đâu)', () => {
+    const s = status(['Node.js', 'SQL', 'Git'], 'Backend: NestJS, PostgreSQL. Tools: GitHub Actions');
+    expect(s['Kỹ năng Node.js']).toEqual(['MET', 'Suy ra từ "nestjs" trong CV / hồ sơ']);
+    expect(s['Kỹ năng SQL'][0]).toBe('MET');
+    expect(s['Kỹ năng Git'][0]).toBe('MET');
+  });
+
+  it('C# không bị khớp nhầm với chữ "c" đơn lẻ; C++ khác C#', () => {
+    expect(status(['C#'], 'Kỹ năng: c và tin học văn phòng')['Kỹ năng C#'][0]).toBe('MISSING');
+    expect(status(['C#'], 'Languages: TypeScript, C#, SQL')['Kỹ năng C#'][0]).toBe('MET');
+    expect(status(['C#'], 'Thành thạo C++')['Kỹ năng C#'][0]).toBe('MISSING');
+  });
+});

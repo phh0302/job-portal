@@ -46,12 +46,12 @@ export default function CvCheckModal({
     queryFn: async () => (await api.get<Resume[]>('/candidate/resumes')).data,
     enabled: open,
   });
-  const { data: quota } = useQuery({
+  const { data: quota, error: quotaError, refetch: refetchQuota } = useQuery({
     queryKey: CV_CHECK_QUOTA_KEY,
     queryFn: async () => (await api.get<ScreeningQuota>('/candidate/cv-check/quota')).data,
     enabled: open,
   });
-  const { data: last, isLoading } = useQuery({
+  const { data: last, isLoading, error: lastError, refetch: refetchLast } = useQuery({
     queryKey: resultKey,
     queryFn: async () => (await api.get<CvCheck | null>(`/candidate/jobs/${jobId}/cv-check`)).data,
     enabled: open,
@@ -120,6 +120,21 @@ export default function CvCheckModal({
         </div>
 
         {check.isError && <Alert type="error">{errorMessage(check.error)}</Alert>}
+        {(quotaError || lastError) && !check.isError && (
+          <Alert type="error">
+            {errorMessage(quotaError ?? lastError, 'Không tải được dữ liệu kiểm tra CV')}{' '}
+            <button
+              type="button"
+              className="font-medium underline"
+              onClick={() => {
+                refetchQuota();
+                refetchLast();
+              }}
+            >
+              Thử lại
+            </button>
+          </Alert>
+        )}
         {isLoading && !shown && <p className="text-slate-500">Đang tải…</p>}
 
         {shown && (
@@ -135,7 +150,7 @@ export default function CvCheckModal({
                 </p>
               </div>
             </div>
-            {!shown.cvReadable && (
+            {!shown.cvReadable && shown.resumeId != null && (
               <Alert type="info">Không đọc được nội dung file CV (có thể là ảnh scan). Kết quả chỉ dựa trên hồ sơ – hãy dùng CV dạng PDF/DOCX có chữ.</Alert>
             )}
 

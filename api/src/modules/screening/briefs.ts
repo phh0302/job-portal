@@ -5,6 +5,7 @@ import type { CandidateProfile } from '../candidates/entities/candidate-profile.
 import type { Job } from '../jobs/entities/job.entity';
 import type { StorageService } from '../storage/storage.service';
 import { docxToText } from './docx-text';
+import { pdfToText } from './pdf-text';
 import type { CandidateBrief, CvContent, JobBrief } from './screening.engine';
 
 /** Tin tuyển dụng → dữ liệu gửi AI (cần nạp sẵn skills, categories) */
@@ -33,13 +34,13 @@ export function toCandidateBrief(c: CandidateProfile, coverLetter: string | null
   };
 }
 
-/** PDF → gửi nguyên file cho AI; DOCX → lấy văn bản; DOC cũ / lỗi → không đọc được */
+/** PDF → gửi nguyên file cho AI (+ chữ trích được); DOCX → lấy văn bản; DOC cũ / lỗi → không đọc được */
 export async function readCv(storage: StorageService, key: string | null | undefined): Promise<CvContent> {
   if (!key) return { kind: 'none' };
   try {
     const buf = await readFile(storage.fullPath(key));
     const ext = extname(key).toLowerCase();
-    if (ext === '.pdf') return { kind: 'pdf', base64: buf.toString('base64') };
+    if (ext === '.pdf') return { kind: 'pdf', base64: buf.toString('base64'), text: pdfToText(buf) };
     if (ext === '.docx') {
       const text = docxToText(buf);
       return text ? { kind: 'text', text } : { kind: 'none' };
