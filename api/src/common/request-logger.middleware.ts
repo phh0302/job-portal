@@ -4,6 +4,19 @@ import { NextFunction, Request, Response } from 'express';
 import { AuthUser } from './types/auth-user';
 
 /**
+ * Gắn mã X-Request-Id cho request (giữ mã có sẵn nếu đã gắn hoặc client gửi lên hợp lệ).
+ * Gọi sớm nhất trong configureApp để cả lỗi của body-parser (body quá lớn…) cũng có mã tra cứu.
+ */
+export function assignRequestId(req: Request & { id?: string }, res: Response, next?: NextFunction) {
+  if (!req.id) {
+    const incoming = req.headers['x-request-id'];
+    req.id = typeof incoming === 'string' && /^[\w-]{8,64}$/.test(incoming) ? incoming : randomUUID();
+  }
+  res.setHeader('X-Request-Id', req.id);
+  next?.();
+}
+
+/**
  * Ghi log mỗi request: method, đường dẫn, mã trạng thái, thời gian xử lý, user, IP.
  * Gắn X-Request-Id để tra cứu lỗi (người dùng gửi mã này cho admin).
  */
@@ -12,10 +25,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
   private readonly logger = new Logger('HTTP');
 
   use(req: Request & { id?: string; user?: AuthUser }, res: Response, next: NextFunction) {
-    const incoming = req.headers['x-request-id'];
-    req.id =
-      typeof incoming === 'string' && /^[\w-]{8,64}$/.test(incoming) ? incoming : randomUUID();
-    res.setHeader('X-Request-Id', req.id);
+    assignRequestId(req, res);
     const start = process.hrtime.bigint();
 
     res.on('finish', () => {

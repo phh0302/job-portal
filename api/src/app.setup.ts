@@ -6,6 +6,7 @@ import express from 'express';
 import helmet from 'helmet';
 import { join, resolve } from 'path';
 import { AllExceptionsFilter } from './common/http-exception.filter';
+import { assignRequestId } from './common/request-logger.middleware';
 import { validationExceptionFactory } from './common/validation';
 
 /** Cấu hình chung cho app (dùng cho main.ts và E2E test) */
@@ -15,6 +16,7 @@ export function configureApp(app: NestExpressApplication) {
   // Phía sau reverse proxy (Nginx, IIS…) để req.ip là IP thật của người dùng
   if (process.env.TRUST_PROXY) app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? 1 : process.env.TRUST_PROXY);
   app.disable('x-powered-by');
+  app.use(assignRequestId);
   // Giới hạn kích thước body (mô tả công việc dài nhưng không cần hơn 1MB)
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));

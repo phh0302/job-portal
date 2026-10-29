@@ -36,6 +36,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (typeof c === 'string') code = c;
       if (status === HttpStatus.PAYLOAD_TOO_LARGE)
         message = 'Dữ liệu / file vượt quá dung lượng cho phép';
+    } else if (isClientHttpError(exception)) {
+      // Lỗi 4xx do middleware Express ném ra (vd. body-parser: body quá 1MB -> 413) – không phải HttpException của Nest
+      status = exception.status;
+      message =
+        status === HttpStatus.PAYLOAD_TOO_LARGE
+          ? 'Dữ liệu / file vượt quá dung lượng cho phép'
+          : 'Dữ liệu gửi lên không hợp lệ';
     } else if (
       exception instanceof QueryFailedError &&
       /UNIQUE|duplicate key/i.test(exception.message)
@@ -63,4 +70,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       requestId: req.id,
     });
   }
+}
+
+/** Lỗi theo chuẩn http-errors (body-parser…) với mã 4xx, được phép báo cho client */
+function isClientHttpError(e: unknown): e is { status: number } {
+  if (typeof e !== 'object' || e === null) return false;
+  const { status, expose } = e as { status?: unknown; expose?: unknown };
+  return typeof status === 'number' && status >= 400 && status < 500 && expose === true;
 }
