@@ -7,17 +7,17 @@ Kết quả chi tiết từng TC: [`job-portal-testcases.xlsx`](job-portal-testc
 
 | Mã | Tiêu đề | Mức độ | Ưu tiên | Trạng thái | TC liên quan |
 |---|---|---|---|---|---|
-| BUG-01 | [Hỗ trợ] Gửi câu hỏi cho trợ lý làm sập toàn trang | High | P1 | Fixed – chờ commit | TC-ALL01-004 |
-| BUG-02 | [Ứng tuyển 1 chạm] Hồ sơ trống hiện lỗi chung chung thay vì hướng dẫn | Medium | P2 | New | TC-CAN17-003 |
-| BUG-03 | [Hệ thống] Thời gian do DB tạo lệch 7 giờ khi SQL Server chạy trong Docker | Medium | P1 | New | TC-CAN15-002, TC-EMP16-001 |
-| BUG-04 | [Kiểm tra CV] Số lượt còn lại không cập nhật sau lỗi 429 / khi admin đổi giới hạn | Low | P3 | New | TC-CAN19-011 |
-| BUG-05 | [Hỗ trợ] Phím Esc không đóng widget hỗ trợ | Low | P3 | New | (ngoài TC) |
-| BUG-06 | [Admin] Thiếu trường lý do khi từ chối đánh giá → thông báo lẫn tiếng Anh | Low | P3 | New | TC-ADM12-004 |
-| BUG-07 | [Đăng nhập] Đăng xuất rồi đăng nhập tài khoản vai trò khác bị đưa vào trang 403 | Medium | P1 | New | TC-AUTH02-002 |
-| BUG-08 | [Khoá tài khoản] Người bị khoá không bị đăng xuất; trang hiện "chưa có dữ liệu" thay vì báo khoá | Medium | P2 | New | TC-AUTH07-001 |
+| BUG-01 | [Hỗ trợ] Gửi câu hỏi cho trợ lý làm sập toàn trang | High | P1 | Fixed – đã retest | TC-ALL01-004 |
+| BUG-02 | [Ứng tuyển 1 chạm] Hồ sơ trống hiện lỗi chung chung thay vì hướng dẫn | Medium | P2 | Fixed – đã retest | TC-CAN17-003 |
+| BUG-03 | [Hệ thống] Thời gian do DB tạo lệch 7 giờ khi SQL Server chạy trong Docker | Medium | P1 | Fixed – đã retest | TC-CAN15-002, TC-EMP16-001 |
+| BUG-04 | [Kiểm tra CV] Số lượt còn lại không cập nhật sau lỗi 429 / khi admin đổi giới hạn | Low | P3 | Fixed – đã retest | TC-CAN19-011 |
+| BUG-05 | [Hỗ trợ] Phím Esc không đóng widget hỗ trợ | Low | P3 | Fixed – đã retest | (ngoài TC) |
+| BUG-06 | [Admin] Thiếu trường lý do khi từ chối đánh giá → thông báo lẫn tiếng Anh | Low | P3 | Fixed – đã retest | TC-ADM12-004 |
+| BUG-07 | [Đăng nhập] Đăng xuất rồi đăng nhập tài khoản vai trò khác bị đưa vào trang 403 | Medium | P1 | Fixed – đã retest | TC-AUTH02-002 |
+| BUG-08 | [Khoá tài khoản] Người bị khoá không bị đăng xuất; trang hiện "chưa có dữ liệu" thay vì báo khoá | Medium | P2 | Fixed – đã retest | TC-AUTH07-001 |
 | Q-01 | [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ | Câu hỏi PO | – | Cần làm rõ | TC-EMP14-010 |
 
-Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`, SQL Server 2022 trong Docker (`jobportal-sqlserver`), trình duyệt tích hợp của Claude desktop (Chromium bản mới), chưa có `ANTHROPIC_API_KEY`. Bản build: `main @ 968dc5f`. Ngày test: 29/10/2026. Người test: Claude.
+Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`, SQL Server 2022 trong Docker (`jobportal-sqlserver`), trình duyệt tích hợp của Claude desktop (Chromium bản mới), chưa có `ANTHROPIC_API_KEY`. Bản build khi phát hiện: `main @ 968dc5f`. Bản sửa: commit `68f5816` (BUG-01…08), retest 29/10/2026 – tất cả Pass. Ngày test: 29/10/2026. Người test: Claude.
 
 ---
 
@@ -134,3 +134,4 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 |---|---|---|
 | 29/10/2026 | BUG-01…06, Q-01 | Tạo mới từ lượt test P1 tính năng mới; BUG-01 sửa trong lượt test (retest Pass) |
 | 29/10/2026 | BUG-07, BUG-08 | Thêm từ lượt test P0 Xác thực + Quy tắc trạng thái (43/43 TC, 41 Pass / 2 Fail) |
+| 29/10/2026 | BUG-01…08 | Sửa trong commit 68f5816; retest trên trình duyệt: 8/8 Fixed (TC AUTH02-002, AUTH07-001, CAN17-003, CAN19-011, ADM12-004, ALL01-004 chuyển Pass). BUG-03 cần tạo lại container (`docker compose up -d`); dữ liệu cũ vẫn lệch 7 giờ |
