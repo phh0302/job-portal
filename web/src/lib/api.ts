@@ -27,6 +27,21 @@ export const setOnSessionExpired = (fn: () => void) => {
   onSessionExpired = fn;
 };
 
+/** API trả 403 kèm code này khi tài khoản bị admin khoá */
+export const ACCOUNT_LOCKED = 'ACCOUNT_LOCKED';
+let onAccountLocked: ((message: string) => void) | null = null;
+export const setOnAccountLocked = (fn: (message: string) => void) => {
+  onAccountLocked = fn;
+};
+
+/** Lỗi do tài khoản bị khoá? Trả về câu thông báo, ngược lại null */
+export function accountLockedMessage(err: unknown): string | null {
+  if (!axios.isAxiosError(err) || err.response?.status !== 403) return null;
+  const data = err.response.data as { code?: unknown; message?: unknown } | undefined;
+  if (data?.code !== ACCOUNT_LOCKED) return null;
+  return typeof data.message === 'string' ? data.message : 'Tài khoản của bạn đã bị khóa';
+}
+
 export async function refreshAccessToken(): Promise<string | null> {
   refreshing ??= api
     .post<{ accessToken: string }>('/auth/refresh', undefined, { _skipRefresh: true } as never)
@@ -34,8 +49,10 @@ export async function refreshAccessToken(): Promise<string | null> {
       setAccessToken(r.data.accessToken);
       return r.data.accessToken;
     })
-    .catch(() => {
+    .catch((err: unknown) => {
       setAccessToken(null);
+      const locked = accountLockedMessage(err);
+      if (locked) onAccountLocked?.(locked);
       return null;
     })
     .finally(() => {
@@ -56,8 +73,17 @@ api.interceptors.response.use(undefined, async (error: AxiosError) => {
     if (token) return api(cfg);
     onSessionExpired?.();
   }
+  // Bị admin khoá trong lúc đang dùng: xoá phiên ở web và báo cho người dùng (không coi như danh sách rỗng)
+  const locked = isAuthCall ? null : accountLockedMessage(error);
+  if (locked) {
+    setAccessToken(null);
+    onAccountLocked?.(locked);
+  }
   return Promise.reject(error);
 });
+
+/** Lỗi phía web có câu thông báo dành cho người dùng (errorMessage() hiện nguyên câu này) */
+export class UserError extends Error {}
 
 /** Lấy thông báo lỗi tiếng Việt từ response của API */
 export function errorMessage(err: unknown, fallback = 'Đã có lỗi xảy ra, vui lòng thử lại'): string {
@@ -66,6 +92,9 @@ export function errorMessage(err: unknown, fallback = 'Đã có lỗi xảy ra, 
     if (Array.isArray(msg)) return msg.join('. ');
     if (typeof msg === 'string') return msg;
     if (!err.response) return 'Không kết nối được máy chủ';
+  } else if (err instanceof UserError) {
+    // Lỗi do chính web ném ra kèm câu tiếng Việt dành cho người dùng (vd. hồ sơ trống khi ứng tuyển 1 chạm)
+    return err.message;
   }
   return fallback;
 }

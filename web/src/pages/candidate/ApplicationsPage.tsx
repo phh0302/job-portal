@@ -33,7 +33,7 @@ interface MyApplication {
 export default function ApplicationsPage() {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['candidate', 'applications', page],
     queryFn: async () => (await api.get<Paginated<MyApplication>>('/candidate/applications', { params: { page, limit: 10 } })).data,
     placeholderData: keepPreviousData,
@@ -49,7 +49,12 @@ export default function ApplicationsPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Việc đã ứng tuyển</h1>
       {withdraw.isError && <Alert type="error">{errorMessage(withdraw.error)}</Alert>}
-      {isLoading ? (
+      {isError && !data ? (
+        <Alert type="error">
+          {errorMessage(error)}{' '}
+          <button type="button" onClick={() => refetch()} className="font-medium underline">Thử lại</button>
+        </Alert>
+      ) : isLoading ? (
         <ListSkeleton />
       ) : data && data.items.length > 0 ? (
         <>

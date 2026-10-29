@@ -56,6 +56,8 @@ describe('JwtAuthGuard', () => {
   it('tài khoản bị khóa -> 403', async () => {
     const user = { id: 5, email: 'a@b.c', role: UserRole.EMPLOYER, status: UserStatus.LOCKED, emailVerified: true };
     await expect(makeGuard(false, user).canActivate(ctx(bearer(5)))).rejects.toThrow(ForbiddenException);
+    // web dựa vào mã này để đăng xuất và báo cho người dùng (BUG-08)
+    await expect(makeGuard(false, user).canActivate(ctx(bearer(5)))).rejects.toMatchObject({ response: { code: 'ACCOUNT_LOCKED' } });
   });
 });
 

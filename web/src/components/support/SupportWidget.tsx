@@ -92,7 +92,11 @@ function Chat({ role }: { role: 'CANDIDATE' | 'EMPLOYER' }) {
   });
 
   const last = data?.messages.at(-1)?.id;
-  useEffect(() => bottomRef.current?.scrollIntoView({ block: 'end' }), [last, send.isPending]);
+  // Viết trong { } để effect không trả về giá trị: Chrome mới cho scrollIntoView() trả về Promise,
+  // React sẽ coi đó là hàm dọn dẹp và sập component ("destroy is not a function").
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: 'end' });
+  }, [last, send.isPending]);
 
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
@@ -208,6 +212,19 @@ export default function SupportWidget() {
     }
   }, [params, setParams]);
 
+  // Esc đóng widget (giống các hộp thoại khác) và trả focus về nút mở
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      setOpen(false);
+      toggleRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
   if (user?.role === 'ADMIN') return null;
 
   return (
@@ -229,6 +246,7 @@ export default function SupportWidget() {
         </section>
       )}
       <button
+        ref={toggleRef}
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? 'Đóng hỗ trợ' : 'Mở hỗ trợ khách hàng'}
         className="relative flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-2xl text-white shadow-lg hover:bg-brand-700"

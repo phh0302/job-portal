@@ -65,6 +65,10 @@ export default function CvCheckModal({
   useEffect(() => {
     if (open) setResult(null);
   }, [open, jobId]);
+  // Lượt có thể đổi ở nơi khác (admin đổi giới hạn, tab khác) -> lấy lại mỗi lần mở cửa sổ
+  useEffect(() => {
+    if (open) qc.invalidateQueries({ queryKey: CV_CHECK_QUOTA_KEY });
+  }, [open, qc]);
   const shown = result ?? last ?? null;
 
   const check = useMutation({
@@ -73,8 +77,9 @@ export default function CvCheckModal({
     onSuccess: (r) => {
       setResult(r);
       qc.setQueryData(resultKey, r);
-      qc.invalidateQueries({ queryKey: CV_CHECK_QUOTA_KEY });
     },
+    // Cả khi lỗi (vd. 429 hết lượt) cũng cập nhật số lượt để khoá nút đúng lúc
+    onSettled: () => qc.invalidateQueries({ queryKey: CV_CHECK_QUOTA_KEY }),
   });
 
   const noQuota = !!quota && quota.limit > 0 && quota.remaining <= 0;

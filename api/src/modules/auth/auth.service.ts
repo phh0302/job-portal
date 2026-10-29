@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -10,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { UserRole, UserStatus, UserTokenType } from '../../common/enums';
+import { accountLocked } from '../../common/utils/account-locked';
 import { hashPassword, verifyPassword } from '../../common/utils/password';
 import { CandidateProfile } from '../candidates/entities/candidate-profile.entity';
 import { EmployerProfile } from '../companies/entities/employer-profile.entity';
@@ -87,7 +87,7 @@ export class AuthService {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
     }
     if (user.status === UserStatus.LOCKED) {
-      throw new ForbiddenException('Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên');
+      throw accountLocked();
     }
 
     await this.users.update(user.id, { lastLoginAt: new Date() });
@@ -109,7 +109,7 @@ export class AuthService {
 
     const user = await this.users.findOneBy({ id: row.userId });
     if (!user) throw new UnauthorizedException('Tài khoản không tồn tại');
-    if (user.status === UserStatus.LOCKED) throw new ForbiddenException('Tài khoản của bạn đã bị khóa');
+    if (user.status === UserStatus.LOCKED) throw accountLocked();
 
     await this.tokens.revokeRefresh(row.id);
     return this.createSession(user.id, meta);

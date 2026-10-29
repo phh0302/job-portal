@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../auth/useAuth';
 import type { CandidateProfile } from '../pages/candidate/types';
-import { api } from './api';
+import { api, UserError } from './api';
 import { createCvPdf, imageToDataUrl, type CvSettings } from './cvPdf';
 import type { Resume } from './types';
 
@@ -32,7 +32,7 @@ export function useQuickApply(jobId: number, slug: string) {
           api.get<CvSettings>('/candidate/cv-settings').then((r) => r.data),
         ]);
         if (!profile.headline && !profile.skills.length && !profile.experiences.length) {
-          throw new Error('Hồ sơ còn trống nên chưa tạo được CV. Hãy bổ sung tiêu đề nghề nghiệp, kỹ năng hoặc kinh nghiệm, hoặc tải CV lên.');
+          throw new UserError('Hồ sơ còn trống nên chưa tạo được CV. Hãy bổ sung tiêu đề nghề nghiệp, kỹ năng hoặc kinh nghiệm, hoặc tải CV lên.');
         }
         const photo = settings.showPhoto ? await imageToDataUrl(profile.avatarUrl) : null;
         const blob = await createCvPdf({ profile, email: user?.email ?? '', settings, photo });

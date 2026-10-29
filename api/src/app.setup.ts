@@ -6,6 +6,7 @@ import express from 'express';
 import helmet from 'helmet';
 import { join, resolve } from 'path';
 import { AllExceptionsFilter } from './common/http-exception.filter';
+import { validationExceptionFactory } from './common/validation';
 
 /** Cấu hình chung cho app (dùng cho main.ts và E2E test) */
 export function configureApp(app: NestExpressApplication) {
@@ -29,7 +30,14 @@ export function configureApp(app: NestExpressApplication) {
     credentials: true,
     exposedHeaders: ['X-Request-Id', 'Content-Disposition'],
   });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      exceptionFactory: validationExceptionFactory,
+    }),
+  );
   app.useGlobalFilters(new AllExceptionsFilter());
 
   // Chỉ bật Swagger ngoài production (hoặc khi SWAGGER=true)

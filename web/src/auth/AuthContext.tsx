@@ -1,5 +1,6 @@
-import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { api, refreshAccessToken, setAccessToken, setOnSessionExpired } from '../lib/api';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { toast } from '../components/Toast';
+import { api, refreshAccessToken, setAccessToken, setOnAccountLocked, setOnSessionExpired } from '../lib/api';
 import type { AuthResponse, User, UserRole } from './types';
 
 export interface RegisterInput {
@@ -17,6 +18,8 @@ export interface AuthContextValue {
   register: (input: RegisterInput) => Promise<User>;
   logout: () => Promise<void>;
   reloadUser: () => Promise<void>;
+  /** Lý do phiên bị kết thúc ngoài ý muốn (vd. tài khoản bị khoá) – trang đăng nhập hiện câu này */
+  sessionNotice: string | null;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
@@ -24,8 +27,12 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
+  const lockNotified = useRef(false);
 
   const applyAuth = useCallback((data: AuthResponse) => {
+    setSessionNotice(null);
+    lockNotified.current = false;
     setAccessToken(data.accessToken);
     setUser(data.user);
     return data.user;
@@ -34,6 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Khôi phục phiên từ cookie refresh token khi tải trang
   useEffect(() => {
     setOnSessionExpired(() => setUser(null));
+    // Admin khoá tài khoản trong lúc đang dùng -> đăng xuất ở web, báo 1 lần (nhiều request lỗi cùng lúc)
+    setOnAccountLocked((message) => {
+      if (!lockNotified.current) {
+        lockNotified.current = true;
+        toast(message, 'error');
+      }
+      setUser(null);
+      setSessionNotice(message);
+    });
     (async () => {
       const token = await refreshAccessToken();
       if (token) {
@@ -72,8 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, reloadUser }),
-    [user, loading, login, register, logout, reloadUser],
+    () => ({ user, loading, login, register, logout, reloadUser, sessionNotice }),
+    [user, loading, login, register, logout, reloadUser, sessionNotice],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

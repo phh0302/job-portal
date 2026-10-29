@@ -1,7 +1,6 @@
 import {
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -14,6 +13,7 @@ import { User } from '../../modules/users/entities/user.entity';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { UserStatus } from '../enums';
 import { AuthUser } from '../types/auth-user';
+import { accountLocked } from '../utils/account-locked';
 import { verifyJwt } from '../utils/jwt';
 
 /**
@@ -56,7 +56,7 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Tài khoản không tồn tại');
     }
     if (user.status === UserStatus.LOCKED) {
-      throw new ForbiddenException('Tài khoản của bạn đã bị khóa');
+      throw accountLocked();
     }
 
     req.user = { id: user.id, email: user.email, role: user.role, emailVerified: user.emailVerified };

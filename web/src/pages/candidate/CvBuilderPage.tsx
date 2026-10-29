@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
 import { toast } from '../../components/Toast';
 import { Alert, Button } from '../../components/ui';
-import { api, errorMessage } from '../../lib/api';
+import { api, errorMessage, UserError } from '../../lib/api';
 import { CV_COLORS, CV_TEMPLATES, createCvPdf, imageToDataUrl, type CvSettings } from '../../lib/cvPdf';
 import { PROFILE_KEY, type CandidateProfile } from './types';
 
@@ -87,7 +87,7 @@ function Editor({ profile, initial }: { profile: CandidateProfile; initial: CvSe
 
   const saveAsResume = useMutation({
     mutationFn: async () => {
-      if (!blob) throw new Error('CV chưa được tạo xong');
+      if (!blob) throw new UserError('CV chưa được tạo xong, vui lòng đợi giây lát');
       const fd = new FormData();
       fd.append('file', new File([blob], fileName(profile.fullName), { type: 'application/pdf' }));
       await api.post('/candidate/resumes', fd);

@@ -9,6 +9,9 @@ services:
       # Đặt DB_PASSWORD trong môi trường hoặc file .env cạnh file này (khớp api/.env)
       MSSQL_SA_PASSWORD: ${DB_PASSWORD:-Dev_Passw0rd_123!}
       MSSQL_PID: Developer
+      # Phải cùng múi giờ với máy chạy API (GETDATE() trả giờ của container; mặc định container là UTC
+      # -> thời gian lệch 7 giờ khi API chạy trên Windows giờ Việt Nam). Đổi bằng biến DB_TZ nếu cần.
+      TZ: ${DB_TZ:-Asia/Ho_Chi_Minh}
     ports:
       - '1433:1433'
     volumes:

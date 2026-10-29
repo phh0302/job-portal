@@ -11,7 +11,7 @@ import { QueryFailedError } from 'typeorm';
 
 /**
  * Xử lý lỗi tập trung. Mọi lỗi trả về dạng:
- * { statusCode, message, path, timestamp, requestId }
+ * { statusCode, message, code?, path, timestamp, requestId }
  * Lỗi 5xx: ghi log đầy đủ (stack) nhưng KHÔNG lộ chi tiết kỹ thuật cho người dùng.
  */
 @Catch()
@@ -25,11 +25,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: unknown = 'Lỗi máy chủ, vui lòng thử lại sau';
+    let code: string | undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const body = exception.getResponse();
       message = typeof body === 'string' ? body : ((body as { message?: unknown }).message ?? body);
+      // Mã lỗi máy đọc được (vd. ACCOUNT_LOCKED) để web xử lý riêng
+      const c = typeof body === 'object' ? (body as { code?: unknown }).code : undefined;
+      if (typeof c === 'string') code = c;
       if (status === HttpStatus.PAYLOAD_TOO_LARGE)
         message = 'Dữ liệu / file vượt quá dung lượng cho phép';
     } else if (
@@ -53,6 +57,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     res.status(status).json({
       statusCode: status,
       message,
+      ...(code ? { code } : {}),
       path: req.url.split('?')[0],
       timestamp: new Date().toISOString(),
       requestId: req.id,

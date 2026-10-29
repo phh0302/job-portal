@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import type { z } from 'zod';
 import { useAuth } from '../../auth/useAuth';
-import { ROLE_HOME } from '../../auth/types';
+import { homeAfterLogin } from '../../auth/types';
 import { Alert, AuthCard, Button, Field } from '../../components/ui';
 import { errorMessage } from '../../lib/api';
 import { loginSchema } from '../../lib/schemas';
@@ -14,7 +14,7 @@ type Values = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   useSeo({ title: 'Đăng nhập' });
-  const { login } = useAuth();
+  const { login, sessionNotice } = useAuth();
   const navigate = useNavigate();
   const state = useLocation().state as { from?: string; notice?: string } | null;
   const { register, handleSubmit, formState: { errors } } = useForm<Values>({
@@ -23,7 +23,7 @@ export default function LoginPage() {
   });
   const mut = useMutation({
     mutationFn: (v: Values) => login(v.email, v.password),
-    onSuccess: (user) => navigate(state?.from ?? ROLE_HOME[user.role], { replace: true }),
+    onSuccess: (user) => navigate(homeAfterLogin(user.role, state?.from), { replace: true }),
   });
 
   return (
@@ -32,7 +32,8 @@ export default function LoginPage() {
       subtitle={<>Chưa có tài khoản? <Link to="/register" className="text-brand-600 hover:underline">Đăng ký</Link></>}
     >
       <form onSubmit={handleSubmit((v) => mut.mutate(v))} className="space-y-4" noValidate>
-        {state?.notice && !mut.isError && <Alert type="success">{state.notice}</Alert>}
+        {sessionNotice && !mut.isError && <Alert type="error">{sessionNotice}</Alert>}
+        {state?.notice && !mut.isError && !sessionNotice && <Alert type="success">{state.notice}</Alert>}
         {mut.isError && <Alert type="error">{errorMessage(mut.error)}</Alert>}
         <Field label="Email" type="email" autoComplete="email" {...register('email')} error={errors.email?.message} />
         <Field label="Mật khẩu" type="password" autoComplete="current-password" {...register('password')} error={errors.password?.message} />
