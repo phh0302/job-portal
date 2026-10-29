@@ -12,11 +12,26 @@ import {
   Max,
   MaxLength,
   Min,
+  Validate,
   ValidateIf,
+  ValidatorConstraint,
+  type ValidatorConstraintInterface,
 } from 'class-validator';
+import { todayVN } from '../../../common/utils/date';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const DATE_MSG = 'Ngày phải có dạng YYYY-MM-DD';
+/** Ngày sinh hợp lệ: từ 1940-01-01 đến hôm nay (giờ VN) – khớp kiểm tra ở web */
+@ValidatorConstraint({ name: 'birthDate' })
+class BirthDateRule implements ValidatorConstraintInterface {
+  validate(v: unknown) {
+    return typeof v === 'string' && v >= '1940-01-01' && v <= todayVN();
+  }
+  defaultMessage() {
+    return 'Ngày sinh không hợp lệ';
+  }
+}
+
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 /** Chuỗi rỗng -> null để xoá giá trị */
 const emptyToNull = ({ value }: { value: unknown }) =>
@@ -43,6 +58,7 @@ export class UpdateProfileDto {
   @Transform(emptyToNull)
   @ValidateIf((_, v) => v !== null)
   @Matches(DATE, { message: DATE_MSG })
+  @Validate(BirthDateRule)
   dateOfBirth?: string | null;
 
   @ApiPropertyOptional()
