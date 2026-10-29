@@ -15,7 +15,9 @@ Kết quả chi tiết từng TC: [`job-portal-testcases.xlsx`](job-portal-testc
 | BUG-06 | [Admin] Thiếu trường lý do khi từ chối đánh giá → thông báo lẫn tiếng Anh | Low | P3 | Fixed – đã retest | TC-ADM12-004 |
 | BUG-07 | [Đăng nhập] Đăng xuất rồi đăng nhập tài khoản vai trò khác bị đưa vào trang 403 | Medium | P1 | Fixed – đã retest | TC-AUTH02-002 |
 | BUG-08 | [Khoá tài khoản] Người bị khoá không bị đăng xuất; trang hiện "chưa có dữ liệu" thay vì báo khoá | Medium | P2 | Fixed – đã retest | TC-AUTH07-001 |
-| Q-01 | [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ | Câu hỏi PO | – | Cần làm rõ | TC-EMP14-010 |
+| BUG-09 | [Hồ sơ] Ô Tỉnh/thành hiện "-- Chọn --" sau khi tải lại trang dù đã lưu | Low | P2 | Fixed – đã retest | TC-CAN01-001 |
+| BUG-10 | [Đăng tin] "Lưu nháp" đòi đủ trường bắt buộc như "Gửi duyệt" | Low | P3 | Closed – đúng thiết kế (PO giữ hành vi hiện tại) | TC-EMP03-002 |
+| Q-01 | [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ | Câu hỏi PO | – | Đã chốt: không ẩn (đúng thiết kế) | TC-EMP14-010 |
 
 Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`, SQL Server 2022 trong Docker (`jobportal-sqlserver`), trình duyệt tích hợp của Claude desktop (Chromium bản mới), chưa có `ANTHROPIC_API_KEY`. Bản build khi phát hiện: `main @ 968dc5f`. Bản sửa: commit `68f5816` (BUG-01…08), retest 29/10/2026 – tất cả Pass. Ngày test: 29/10/2026. Người test: Claude.
 
@@ -120,11 +122,31 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 - **Nguyên nhân:** interceptor `web/src/lib/api.ts` chỉ xử lý 401; 403 "bị khóa" đi thẳng về component. `ApplicationsPage` (và có thể các trang danh sách khác) coi lỗi như danh sách rỗng.
 - **Đề xuất sửa:** API trả mã lỗi riêng (vd. `code: "ACCOUNT_LOCKED"`) hoặc 401 cho tài khoản bị khoá; interceptor gặp mã này → `onSessionExpired()` + chuyển `/login` với `state.notice`. Các trang danh sách hiện `Alert` khi `isError` thay vì trạng thái rỗng.
 
+## BUG-09 – [Hồ sơ] Ô Tỉnh/thành hiện "-- Chọn --" sau khi tải lại trang dù đã lưu
+
+- **Liên quan:** TC-CAN01-001 · CAN-01 (cùng kiểu form: hồ sơ công ty, đăng tin)
+- **Mức độ / Ưu tiên:** Low / P2 – dữ liệu không mất (bấm Lưu vẫn gửi đúng locationId), nhưng người dùng tưởng chưa lưu và chọn lại
+- **Các bước:** qa.uv02 chọn Tỉnh/thành Hà Nội → Lưu → tải lại trang (F5) /candidate/profile.
+- **Thực tế:** ô hiện "-- Chọn --"; API trả `locationId: 1`.
+- **Nguyên nhân:** `<select>` đăng ký bằng `register()` (không controlled) nhận giá trị mặc định khi danh sách tỉnh/thành chưa tải xong (chưa có `<option>` tương ứng); khi danh sách về, react-hook-form không gán lại.
+- **Đã sửa:** hook `web/src/lib/useSelectSync.ts` gán lại giá trị khi danh sách đã tải; dùng ở `InfoCard.tsx`, `CompanyPage.tsx`, `JobFormPage.tsx`. Retest: tải lại trang → "Hà Nội".
+
+## BUG-10 – [Đăng tin] "Lưu nháp" đòi đủ trường bắt buộc như "Gửi duyệt"
+
+- **Liên quan:** TC-EMP03-002 · EMP-03
+- **Mức độ / Ưu tiên:** Low / P3 – cần PO xác nhận (PRD chỉ ghi "Lưu nháp hoặc Gửi duyệt")
+- **Các bước:** /employer/jobs/new → chỉ nhập chức danh → bấm Lưu nháp.
+- **Thực tế:** bị chặn: "Chọn ít nhất 1 ngành nghề", "Vui lòng nhập mô tả công việc", lương… (API `POST /employer/jobs` với `submit:false` cũng yêu cầu đủ trường).
+- **Mong đợi (theo TC):** lưu được nháp khi mới nhập một phần, chỉ kiểm tra đầy đủ lúc Gửi duyệt.
+- **Quyết định (29/10/2026, PO):** giữ như hiện tại – nháp cũng phải đủ trường bắt buộc. Đã sửa TC-EMP03-002 theo thiết kế này (Pass). Đóng.
+- **Đề xuất cũ (không áp dụng):** tách validate – nháp chỉ cần chức danh; các ràng buộc còn lại kiểm khi `submit` (web: schema riêng cho nút Lưu nháp; API: DTO nháp với các trường optional, kiểm tra đủ trong `submit()`). Nếu giữ như hiện tại → sửa TC.
+
 ## Q-01 – [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ
 
 - **Liên quan:** TC-EMP14-010 · EMP-09, EMP-14
 - **Hiện tại:** trang `/employer/candidates/:id` hiện "Ngày sinh: 20/5/2000" cho mọi NTD, trong khi email/SĐT phải mở bằng lượt liên hệ.
-- **Câu hỏi:** ngày sinh có được coi là thông tin cá nhân cần ẩn (giống liên hệ) không? PRD chưa nêu rõ. Nếu cần ẩn → đổi thành lỗi Medium.
+- **Câu hỏi:** ngày sinh có được coi là thông tin cá nhân cần ẩn (giống liên hệ) không? PRD chưa nêu rõ.
+- **Quyết định (29/10/2026, PO):** không ẩn – giữ như hiện tại. Đóng câu hỏi.
 
 ---
 
@@ -135,3 +157,5 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 | 29/10/2026 | BUG-01…06, Q-01 | Tạo mới từ lượt test P1 tính năng mới; BUG-01 sửa trong lượt test (retest Pass) |
 | 29/10/2026 | BUG-07, BUG-08 | Thêm từ lượt test P0 Xác thực + Quy tắc trạng thái (43/43 TC, 41 Pass / 2 Fail) |
 | 29/10/2026 | BUG-01…08 | Sửa trong commit 68f5816; retest trên trình duyệt: 8/8 Fixed (TC AUTH02-002, AUTH07-001, CAN17-003, CAN19-011, ADM12-004, ALL01-004 chuyển Pass). BUG-03 cần tạo lại container (`docker compose up -d`); dữ liệu cũ vẫn lệch 7 giờ |
+| 29/10/2026 | BUG-09, BUG-10, Q-01 | Lượt P0 còn lại (99 TC: 97 Pass, 1 Fail, 1 Blocked). BUG-09 sửa + retest Pass; BUG-10 chờ PO; Q-01 chốt không ẩn ngày sinh |
+| 29/10/2026 | BUG-10 | PO giữ hành vi hiện tại → Closed (đúng thiết kế); sửa TC-EMP03-002 |
