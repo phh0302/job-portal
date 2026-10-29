@@ -17,6 +17,8 @@ Kết quả chi tiết từng TC: [`job-portal-testcases.xlsx`](job-portal-testc
 | BUG-08 | [Khoá tài khoản] Người bị khoá không bị đăng xuất; trang hiện "chưa có dữ liệu" thay vì báo khoá | Medium | P2 | Fixed – đã retest | TC-AUTH07-001 |
 | BUG-09 | [Hồ sơ] Ô Tỉnh/thành hiện "-- Chọn --" sau khi tải lại trang dù đã lưu | Low | P2 | Fixed – đã retest | TC-CAN01-001 |
 | BUG-10 | [Đăng tin] "Lưu nháp" đòi đủ trường bắt buộc như "Gửi duyệt" | Low | P3 | Closed – đúng thiết kế (PO giữ hành vi hiện tại) | TC-EMP03-002 |
+| BUG-11 | [Hệ thống] Body request quá 1MB trả 500 thay vì 413, không có X-Request-Id | Medium | P2 | Fixed – đã retest | TC-SEC-008 |
+| OBS-01 | [Phiên] 2 lần làm mới phiên gửi đồng thời với cùng refresh token đều thành công | Ghi nhận | – | Cần cân nhắc | TC-AUTH06-001 |
 | Q-01 | [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ | Câu hỏi PO | – | Đã chốt: không ẩn (đúng thiết kế) | TC-EMP14-010 |
 
 Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`, SQL Server 2022 trong Docker (`jobportal-sqlserver`), trình duyệt tích hợp của Claude desktop (Chromium bản mới), chưa có `ANTHROPIC_API_KEY`. Bản build khi phát hiện: `main @ 968dc5f`. Bản sửa: commit `68f5816` (BUG-01…08), retest 29/10/2026 – tất cả Pass. Ngày test: 29/10/2026. Người test: Claude.
@@ -141,6 +143,22 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 - **Quyết định (29/10/2026, PO):** giữ như hiện tại – nháp cũng phải đủ trường bắt buộc. Đã sửa TC-EMP03-002 theo thiết kế này (Pass). Đóng.
 - **Đề xuất cũ (không áp dụng):** tách validate – nháp chỉ cần chức danh; các ràng buộc còn lại kiểm khi `submit` (web: schema riêng cho nút Lưu nháp; API: DTO nháp với các trường optional, kiểm tra đủ trong `submit()`). Nếu giữ như hiện tại → sửa TC.
 
+## BUG-11 – [Hệ thống] Body request quá 1MB trả 500 thay vì 413, không có X-Request-Id
+
+- **Liên quan:** TC-SEC-008, TC-SEC-012 · §6.1
+- **Mức độ / Ưu tiên:** Medium / P2 – chặn đúng (không xử lý body lớn) nhưng trả sai mã, ghi log như lỗi máy chủ, người dùng thấy "Lỗi máy chủ"
+- **Các bước:** gửi `POST /api/auth/login` (hoặc PATCH hồ sơ) với body JSON 1,1MB.
+- **Thực tế:** 500 "Lỗi máy chủ, vui lòng thử lại sau", không có X-Request-Id.
+- **Nguyên nhân:** `express.json({ limit: '1mb' })` ném lỗi kiểu http-errors (`status: 413`, `type: entity.too.large`), không phải `HttpException` của Nest nên `AllExceptionsFilter` coi là 500. X-Request-Id gắn trong middleware Nest – chạy sau body-parser.
+- **Đã sửa:** filter nhận lỗi 4xx chuẩn http-errors (`expose: true`) → 413 "Dữ liệu / file vượt quá dung lượng cho phép"; `assignRequestId` chạy đầu tiên trong `configureApp`. Thêm `http-exception.filter.spec.ts`. Retest: 1,1MB → 413 có X-Request-Id; 900KB → xử lý bình thường.
+
+## OBS-01 – [Phiên] 2 lần làm mới phiên gửi đồng thời với cùng refresh token đều thành công
+
+- **Liên quan:** TC-AUTH06-001 · AUTH-06
+- **Hiện tại:** gửi lại token cũ *sau* khi đã xoay vòng → 401 và thu hồi mọi phiên (đúng). Nhưng 2 request `/auth/refresh` gửi *cùng lúc* với cùng token đều 200: `refresh()` đọc bản ghi (chưa thu hồi) rồi mới `revokeRefresh` – không nguyên tử.
+- **Rủi ro:** thấp – kẻ gian phải dùng token đúng cùng lúc với người dùng. Ngược lại, nhiều tab mở cùng lúc cũng có thể gửi refresh đồng thời; nếu chặn cứng sẽ đăng xuất nhầm người dùng.
+- **Gợi ý:** kiểm tra `affected` của câu `UPDATE … WHERE revoked_at IS NULL` (0 dòng = đã bị dùng) kèm khoảng ân hạn vài giây cho trường hợp nhiều tab. Chưa sửa – để quyết định khi rà soát bảo mật.
+
 ## Q-01 – [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ
 
 - **Liên quan:** TC-EMP14-010 · EMP-09, EMP-14
@@ -159,3 +177,4 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 | 29/10/2026 | BUG-01…08 | Sửa trong commit 68f5816; retest trên trình duyệt: 8/8 Fixed (TC AUTH02-002, AUTH07-001, CAN17-003, CAN19-011, ADM12-004, ALL01-004 chuyển Pass). BUG-03 cần tạo lại container (`docker compose up -d`); dữ liệu cũ vẫn lệch 7 giờ |
 | 29/10/2026 | BUG-09, BUG-10, Q-01 | Lượt P0 còn lại (99 TC: 97 Pass, 1 Fail, 1 Blocked). BUG-09 sửa + retest Pass; BUG-10 chờ PO; Q-01 chốt không ẩn ngày sinh |
 | 29/10/2026 | BUG-10 | PO giữ hành vi hiện tại → Closed (đúng thiết kế); sửa TC-EMP03-002 |
+| 29/10/2026 | BUG-11, OBS-01 | P1 lượt 1 (bảo mật & quy tắc trạng thái, 22 TC Pass). BUG-11 sửa + retest; OBS-01 ghi nhận |
