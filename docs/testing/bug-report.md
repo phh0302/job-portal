@@ -23,6 +23,8 @@ Kết quả chi tiết từng TC: [`job-portal-testcases.xlsx`](job-portal-testc
 | Q-02 | [Tìm việc] Chưa hỗ trợ tìm không dấu ("ke toan" không ra "Kế toán") | Câu hỏi PO | – | Đã làm – tìm không dấu (retest Pass) | TC-CAN05-003 |
 | BUG-13 | [Tải file] File quá dung lượng chỉ báo câu chung, không nêu giới hạn | Low | P3 | Fixed – đã retest | TC-CAN01-007, TC-EMP01-007 |
 | Q-01 | [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ | Câu hỏi PO | – | Đã chốt: không ẩn (đúng thiết kế) | TC-EMP14-010 |
+| BUG-14 | [Thông báo việc làm / Đăng tin / Công ty] Để trống ô chọn ("Tất cả") làm API trả 500 | High | P1 | Fixed – đã retest | TC-CAN10-001 |
+| BUG-15 | [Xác minh email] Link hết hạn không gợi ý gửi lại link mới | Low | P3 | Fixed – đã retest | TC-AUTH03-003 |
 
 Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`, SQL Server 2022 trong Docker (`jobportal-sqlserver`), trình duyệt tích hợp của Claude desktop (Chromium bản mới), chưa có `ANTHROPIC_API_KEY`. Bản build khi phát hiện: `main @ 968dc5f`. Bản sửa: commit `68f5816` (BUG-01…08), retest 29/10/2026 – tất cả Pass. Ngày test: 29/10/2026. Người test: Claude.
 
@@ -191,6 +193,24 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 - **Câu hỏi:** ngày sinh có được coi là thông tin cá nhân cần ẩn (giống liên hệ) không? PRD chưa nêu rõ.
 - **Quyết định (29/10/2026, PO):** không ẩn – giữ như hiện tại. Đóng câu hỏi.
 
+## BUG-14 – [Thông báo việc làm / Đăng tin / Công ty] Để trống ô chọn ("Tất cả") làm API trả 500
+
+- **Liên quan:** TC-CAN10-001 · CAN-10 (ảnh hưởng cả EMP-01, EMP-03)
+- **Mức độ / Ưu tiên:** High / P1 – người dùng không tạo được thông báo việc làm nếu để "Ngành nghề" hoặc "Địa điểm" là "Tất cả".
+- **Bước tái hiện:** uv1 → /candidate/job-alerts → Tạo thông báo → từ khoá "ReactJS", Địa điểm Hà Nội, Ngành nghề để "Tất cả" → Tạo thông báo.
+- **Thực tế (trước khi sửa):** `POST /api/candidate/job-alerts` → 500 "Lỗi máy chủ, vui lòng thử lại sau". Gửi `{locationId:'', categoryId:''}` qua API cũng 500.
+- **Nguyên nhân:** DTO dùng `@Transform(emptyToNull)` + `@Type(() => Number)`; class-transformer đổi `''` thành `0` trước khi `emptyToNull` chạy → `0` lọt qua validate (`validateAlert` bỏ qua vì falsy) rồi vỡ khoá ngoại khi lưu. Cùng mẫu có ở `locationId` của công ty, `salaryMin`/`salaryMax`/`locationId` của tin tuyển dụng.
+- **Đã sửa:** thêm `api/src/common/utils/optional-int.ts` (`toOptionalInt` đọc giá trị gốc: `''` → null, chuỗi số → number, giá trị khác giữ nguyên để `@IsInt` báo 400) + unit test; thay ở `engagement.dto.ts`, `company.dto.ts`, `job.dto.ts`.
+- **Retest:** `''` → 201 (locationId null), `'1'` → 201 (locationId 1), `'abc'` → 400; tạo trên giao diện → alert "ReactJS · Hà Nội" xuất hiện trong danh sách.
+
+## BUG-15 – [Xác minh email] Link hết hạn không gợi ý gửi lại link mới
+
+- **Liên quan:** TC-AUTH03-003
+- **Mức độ / Ưu tiên:** Low / P3
+- **Thực tế (trước khi sửa):** mở link xác minh đã quá hạn → "Link xác minh không hợp lệ hoặc đã hết hạn" + nút "Đăng nhập"/"Về trang chủ", không có gợi ý gửi lại như TC mong đợi.
+- **Đã sửa:** `web/src/pages/auth/VerifyEmailPage.tsx` – khi lỗi: chưa đăng nhập → "Đăng nhập để gửi lại link xác minh mới."; đã đăng nhập mà chưa xác minh → nút "Gửi lại link xác minh" (gọi `/auth/resend-verification`).
+- **Retest:** khách thấy câu gợi ý; qa.ntd11 bấm nút → "Đã gửi lại email xác minh", email mới #20005 trong /admin/emails.
+
 ---
 
 ## Lịch sử
@@ -205,3 +225,4 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 | 29/10/2026 | BUG-11, OBS-01 | P1 lượt 1 (bảo mật & quy tắc trạng thái, 22 TC Pass). BUG-11 sửa + retest; OBS-01 ghi nhận |
 | 29/10/2026 | BUG-12, Q-02 | P1 lượt 2 (Ứng viên, 31 TC Pass). BUG-12 sửa + retest; Q-02 chờ PO |
 | 30/10/2026 | BUG-13, Q-02 | P1 lượt 3 (NTD + Admin, 37 TC Pass). BUG-13 sửa + retest; Q-02 làm tìm không dấu |
+| 30/10/2026 | BUG-14, BUG-15 | P1 lượt 4 (26 TC). BUG-14 (500 khi để trống ô chọn) và BUG-15 sửa + retest Pass |
