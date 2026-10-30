@@ -33,9 +33,14 @@ export default () => {
     },
     /** AI giải thích đề xuất việc làm (tùy chọn) */
     ai: {
+      /** anthropic | ollama | none – để trống: dùng Claude nếu có ANTHROPIC_API_KEY, không thì tắt AI */
+      provider: process.env.AI_PROVIDER || undefined,
       apiKey: process.env.ANTHROPIC_API_KEY || undefined,
       model: process.env.AI_MODEL || 'claude-haiku-5-5',
       baseUrl: process.env.AI_BASE_URL || undefined,
+      /** Mô hình chạy trên máy bằng Ollama (miễn phí, không cần key) */
+      ollamaUrl: process.env.OLLAMA_URL || 'http://localhost:11434',
+      ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5:7b',
     },
     upload: {
       dir: process.env.UPLOAD_DIR ?? 'uploads',

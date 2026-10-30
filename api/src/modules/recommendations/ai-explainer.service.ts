@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash } from 'crypto';
+import { AiClient } from '../../common/ai/ai-client';
 
 /** Dữ liệu gửi cho AI — KHÔNG có họ tên, email, SĐT, địa chỉ của ứng viên */
 export interface AiCandidateInput {
@@ -37,8 +38,8 @@ const CACHE_TTL_MS = 6 * 3600_000;
 const TIMEOUT_MS = 25_000;
 
 /**
- * Gọi Claude (Anthropic Messages API) để viết lời giải thích "vì sao phù hợp" + gợi ý kỹ năng cần bổ sung.
- * - Tùy chọn: không có ANTHROPIC_API_KEY -> tắt, hệ thống vẫn đề xuất bằng thuật toán chấm điểm.
+ * Gọi AI (Claude hoặc mô hình trên máy qua Ollama – xem AiClient) để viết lời giải thích "vì sao phù hợp" + gợi ý kỹ năng cần bổ sung.
+ * - Tùy chọn: AI tắt (không có key / AI_PROVIDER) -> tắt, hệ thống vẫn đề xuất bằng thuật toán chấm điểm.
  * - Cache theo nội dung (hồ sơ + danh sách việc) 6 giờ để tiết kiệm chi phí.
  */
 @Injectable()
@@ -46,14 +47,18 @@ export class AiExplainerService {
   private readonly logger = new Logger(AiExplainerService.name);
   private readonly cache = new Map<string, { at: number; data: AiInsights }>();
 
-  constructor(private readonly config: ConfigService) {}
+  private readonly ai: AiClient;
+
+  constructor(config: ConfigService) {
+    this.ai = new AiClient(config);
+  }
 
   get enabled() {
-    return !!this.config.get<string>('ai.apiKey');
+    return this.ai.enabled;
   }
 
   get model() {
-    return this.config.get<string>('ai.model') ?? 'claude-haiku-5-5';
+    return this.ai.model;
   }
 
   async explain(candidate: AiCandidateInput, jobs: AiJobInput[]): Promise<AiInsights | null> {
@@ -63,7 +68,7 @@ export class AiExplainerService {
     if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.data;
 
     try {
-      const text = await this.callClaude(this.buildPrompt(candidate, jobs));
+      const text = await this.callAi(this.buildPrompt(candidate, jobs));
       const data = this.parse(text, jobs);
       if (!data) return null;
       this.cache.set(key, { at: Date.now(), data });
@@ -96,30 +101,8 @@ Chỉ trả về JSON hợp lệ, không có chữ nào khác, theo dạng:
 {"summary": "...", "items": [{"jobId": 123, "reason": "...", "tip": "..." }]}`;
   }
 
-  private async callClaude(prompt: string): Promise<string> {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-    try {
-      const res = await fetch(this.config.get<string>('ai.baseUrl') ?? 'https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        signal: ctrl.signal,
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': this.config.get<string>('ai.apiKey')!,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: this.model,
-          max_tokens: 2000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
-      const body = (await res.json()) as { content?: { type: string; text?: string }[] };
-      return (body.content ?? []).filter((b) => b.type === 'text').map((b) => b.text ?? '').join('');
-    } finally {
-      clearTimeout(timer);
-    }
+  private callAi(prompt: string): Promise<string> {
+    return this.ai.complete({ messages: [{ role: 'user', content: prompt }], maxTokens: 2000, timeoutMs: TIMEOUT_MS, json: true });
   }
 
   /** Đọc JSON từ AI; chỉ nhận jobId có trong danh sách gửi đi, cắt độ dài để tránh nội dung bất thường */

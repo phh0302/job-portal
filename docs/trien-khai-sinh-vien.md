@@ -108,7 +108,7 @@ Xem mật khẩu admin: `cat /root/jobportal-admin.txt`
 
 Tuỳ chọn:
 - Email thật (xác minh tài khoản, quên mật khẩu): đăng ký gói miễn phí của Brevo/Mailgun → điền `SMTP_*` trong `deploy/.env.prod` → chạy lệnh cập nhật ở Bước 8.
-- Nhận xét AI ở trang "Việc làm gợi ý": điền `ANTHROPIC_API_KEY`.
+- AI (nhận xét việc làm gợi ý, kiểm tra/chấm CV, trợ lý hỗ trợ): điền `ANTHROPIC_API_KEY` (Claude, trả phí theo lượt) **hoặc** đặt `AI_PROVIDER=ollama` để dùng mô hình mở chạy trên máy (miễn phí; VPS cần thêm ~6GB RAM cho `qwen2.5:7b`, hoặc `qwen2.5:3b` ~3GB).
 
 ## Bước 8 – Vận hành hằng ngày
 

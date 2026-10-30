@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ScreeningVerdict } from '../../common/enums';
 import { normalizeVi } from '../support/faq-search';
 import type { RequirementCheck, RequirementStatus } from './entities/cv-screening.entity';
+import { AiClient, type AiContentBlock } from '../../common/ai/ai-client';
 
 /** Yêu cầu của tin tuyển dụng (gửi cho AI) */
 export interface JobBrief {
@@ -220,36 +221,27 @@ export function parseAiResult(text: string, model: string): ScreeningResult | nu
 
 @Injectable()
 export class AiCvScreener {
-  constructor(private readonly config: ConfigService) {}
+  private readonly ai: AiClient;
+
+  constructor(config: ConfigService) {
+    this.ai = new AiClient(config);
+  }
 
   get enabled() {
-    return !!this.config.get<string>('ai.apiKey');
+    return this.ai.enabled;
   }
 
   get model() {
-    return this.config.get<string>('ai.model') ?? 'claude-haiku-5-5';
+    return this.ai.model;
   }
 
   async screen(job: JobBrief, c: CandidateBrief, cv: CvContent): Promise<ScreeningResult | null> {
-    const content: object[] = [];
-    if (cv.kind === 'pdf') content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: cv.base64 } });
-    content.push({ type: 'text', text: buildPrompt(job, c, cv) });
-
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-    try {
-      const res = await fetch(this.config.get<string>('ai.baseUrl') ?? 'https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        signal: ctrl.signal,
-        headers: { 'content-type': 'application/json', 'x-api-key': this.config.get<string>('ai.apiKey')!, 'anthropic-version': '2023-06-01' },
-        body: JSON.stringify({ model: this.model, max_tokens: 2000, messages: [{ role: 'user', content }] }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-      const body = (await res.json()) as { content?: { type: string; text?: string }[] };
-      const text = (body.content ?? []).filter((b) => b.type === 'text').map((b) => b.text ?? '').join('');
-      return parseAiResult(text, this.model);
-    } finally {
-      clearTimeout(timer);
-    }
+    // Mô hình trên máy (Ollama) không đọc được PDF → gửi nội dung chữ đã trích từ PDF
+    const input: CvContent = cv.kind === 'pdf' && !this.ai.supportsPdf ? (cv.text.trim() ? { kind: 'text', text: cv.text } : { kind: 'none' }) : cv;
+    const content: AiContentBlock[] = [];
+    if (input.kind === 'pdf') content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: input.base64 } });
+    content.push({ type: 'text', text: buildPrompt(job, c, input) });
+    const text = await this.ai.complete({ messages: [{ role: 'user', content }], maxTokens: 2000, timeoutMs: TIMEOUT_MS, json: true });
+    return parseAiResult(text, this.model);
   }
 }

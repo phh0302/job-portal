@@ -77,7 +77,7 @@ export class CandidateCheckService {
     const jobBrief = toJobBrief(job);
     const cand = toCandidateBrief(p);
     const inputHash = createHash('sha256')
-      .update(JSON.stringify([ENGINE_VERSION, jobBrief, cand, resume ? [resume.id, resume.fileUrl] : null, this.ai.enabled]))
+      .update(JSON.stringify([ENGINE_VERSION, jobBrief, cand, resume ? [resume.id, resume.fileUrl] : null, this.ai.enabled && this.ai.model]))
       .digest('hex');
     // Cùng JD + hồ sơ + CV trong 24h → dùng lại kết quả, không tốn lượt
     const recent = await this.checks.findOne({

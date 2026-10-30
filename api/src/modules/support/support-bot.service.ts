@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserRole } from '../../common/enums';
 import { normalizeVi, searchFaqs, type FaqLike } from './faq-search';
+import { AiClient } from '../../common/ai/ai-client';
 
 export interface BotTurn {
   role: 'user' | 'assistant';
@@ -26,7 +27,7 @@ const AI_PER_USER_PER_HOUR = 30;
 
 /**
  * Trợ lý hỗ trợ tự động:
- *  - Có ANTHROPIC_API_KEY: Claude trả lời dựa trên các FAQ liên quan nhất (không bịa chính sách).
+ *  - Bật AI (ANTHROPIC_API_KEY hoặc AI_PROVIDER=ollama): mô hình trả lời dựa trên các FAQ liên quan nhất (không bịa chính sách).
  *  - Không có key / AI lỗi / vượt hạn mức: trả lời bằng FAQ khớp nhất, hoặc gợi ý gặp nhân viên.
  * Không gửi email, SĐT, tên người dùng cho AI – chỉ vai trò và nội dung hội thoại.
  */
@@ -35,10 +36,14 @@ export class SupportBotService {
   private readonly logger = new Logger(SupportBotService.name);
   private readonly usage = new Map<number, number[]>();
 
-  constructor(private readonly config: ConfigService) {}
+  private readonly ai: AiClient;
+
+  constructor(config: ConfigService) {
+    this.ai = new AiClient(config);
+  }
 
   get aiEnabled() {
-    return !!this.config.get<string>('ai.apiKey');
+    return this.ai.enabled;
   }
 
   async reply(userId: number, role: UserRole, history: BotTurn[], faqs: FaqLike[]): Promise<BotReply> {
@@ -133,29 +138,12 @@ ${faqs.length ? faqs.map((f, i) => `[${i + 1}] Hỏi: ${f.question}\nĐáp: ${f.
     while (turns.length && turns[0].role !== 'user') turns.shift();
     if (!turns.length) throw new Error('Không có tin nhắn của người dùng');
 
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-    try {
-      const res = await fetch(this.config.get<string>('ai.baseUrl') ?? 'https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        signal: ctrl.signal,
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': this.config.get<string>('ai.apiKey')!,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: this.config.get<string>('ai.model') ?? 'claude-haiku-5-5',
-          max_tokens: 600,
-          system: this.systemPrompt(role, faqs),
-          messages: turns.map((t) => ({ role: t.role, content: t.text.slice(0, 2000) })),
-        }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-      const body = (await res.json()) as { content?: { type: string; text?: string }[] };
-      return (body.content ?? []).filter((b) => b.type === 'text').map((b) => b.text ?? '').join('').trim();
-    } finally {
-      clearTimeout(timer);
-    }
+    const text = await this.ai.complete({
+      system: this.systemPrompt(role, faqs),
+      messages: turns.map((t) => ({ role: t.role, content: t.text.slice(0, 2000) })),
+      maxTokens: 600,
+      timeoutMs: TIMEOUT_MS,
+    });
+    return text.trim();
   }
 }
