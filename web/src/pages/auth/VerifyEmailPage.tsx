@@ -12,6 +12,20 @@ export default function VerifyEmailPage() {
     text: 'Đang xác minh…',
   });
   const called = useRef(false);
+  const [resendMsg, setResendMsg] = useState('');
+  const [sending, setSending] = useState(false);
+
+  async function resend() {
+    setSending(true);
+    try {
+      const { data } = await api.post<{ message: string }>('/auth/resend-verification');
+      setResendMsg(data.message);
+    } catch (err) {
+      setResendMsg(errorMessage(err));
+    } finally {
+      setSending(false);
+    }
+  }
 
   useEffect(() => {
     if (called.current) return; // tránh gọi 2 lần trong StrictMode (token chỉ dùng được 1 lần)
@@ -34,6 +48,19 @@ export default function VerifyEmailPage() {
     <AuthCard title="Xác minh email">
       <div className="space-y-4">
         <Alert type={state.type}>{state.text}</Alert>
+        {state.type === 'error' && !user?.emailVerified && (
+          <p className="text-center text-sm text-gray-600">
+            {!user ? (
+              'Đăng nhập để gửi lại link xác minh mới.'
+            ) : resendMsg ? (
+              resendMsg
+            ) : (
+              <button onClick={resend} disabled={sending} className="font-medium text-brand-600 underline disabled:opacity-60">
+                {sending ? 'Đang gửi…' : 'Gửi lại link xác minh'}
+              </button>
+            )}
+          </p>
+        )}
         <Link to={user ? '/' : '/login'} className="block text-center text-brand-600 hover:underline">
           {user ? 'Về trang chủ' : 'Đăng nhập'}
         </Link>

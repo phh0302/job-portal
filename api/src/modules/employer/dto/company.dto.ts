@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Matches, MaxLength, ValidateIf } from 'class-validator';
 import { CompanySize } from '../../../common/enums';
+import { toOptionalInt } from '../../../common/utils/optional-int';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 const emptyToNull = ({ value }: { value: unknown }) =>
@@ -47,9 +48,8 @@ export class CompanyDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(emptyToNull)
+  @Transform(toOptionalInt)
   @ValidateIf((_, v) => v !== null)
-  @Type(() => Number)
   @IsInt()
   locationId?: number | null;
 

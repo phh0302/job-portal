@@ -1,7 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, MaxLength, ValidateIf } from 'class-validator';
 import { AlertFrequency } from '../../../common/enums';
+import { toOptionalInt } from '../../../common/utils/optional-int';
 
 const emptyToNull = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? (value.trim() === '' ? null : value.trim()) : value === '' ? null : value;
@@ -17,17 +18,15 @@ export class JobAlertDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(emptyToNull)
+  @Transform(toOptionalInt)
   @ValidateIf((_, v) => v !== null)
-  @Type(() => Number)
   @IsInt()
   locationId?: number | null;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(emptyToNull)
+  @Transform(toOptionalInt)
   @ValidateIf((_, v) => v !== null)
-  @Type(() => Number)
   @IsInt()
   categoryId?: number | null;
 

@@ -18,6 +18,7 @@ import {
 } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { JobLevel, JobStatus, JobType } from '../../../common/enums';
+import { toOptionalInt } from '../../../common/utils/optional-int';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 const emptyToNull = ({ value }: { value: unknown }) =>
@@ -56,9 +57,8 @@ export class JobDto {
 
   @ApiPropertyOptional({ description: 'VND/tháng' })
   @IsOptional()
-  @Transform(emptyToNull)
+  @Transform(toOptionalInt)
   @ValidateIf((_, v) => v !== null)
-  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(10_000_000_000)
@@ -66,9 +66,8 @@ export class JobDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(emptyToNull)
+  @Transform(toOptionalInt)
   @ValidateIf((_, v) => v !== null)
-  @Type(() => Number)
   @IsInt()
   @Min(0)
   @Max(10_000_000_000)
@@ -109,9 +108,8 @@ export class JobDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Transform(emptyToNull)
+  @Transform(toOptionalInt)
   @ValidateIf((_, v) => v !== null)
-  @Type(() => Number)
   @IsInt()
   locationId?: number | null;
 
