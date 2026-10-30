@@ -131,12 +131,14 @@ export class EngagementService {
 
   async updateAlert(userId: number, id: number, dto: JobAlertDto) {
     const a = await this.ownAlert(userId, id);
-    await this.validateAlert(dto);
-    const next = { keyword: a.keyword, locationId: a.locationId, categoryId: a.categoryId, ...dto };
+    // Bỏ các trường không gửi (undefined) – PATCH chỉ { isActive } không được xoá từ khoá/địa điểm/ngành khi kiểm tra (BUG-17)
+    const patch = Object.fromEntries(Object.entries(dto).filter(([, v]) => v !== undefined)) as JobAlertDto;
+    await this.validateAlert(patch);
+    const next = { keyword: a.keyword, locationId: a.locationId, categoryId: a.categoryId, ...patch };
     if (!next.keyword && !next.locationId && !next.categoryId) {
       throw new BadRequestException('Hãy nhập ít nhất từ khóa, địa điểm hoặc ngành nghề');
     }
-    if (Object.keys(dto).length) await this.alerts.update(id, dto);
+    if (Object.keys(patch).length) await this.alerts.update(id, patch);
     return this.getAlert(userId, id);
   }
 

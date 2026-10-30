@@ -92,6 +92,8 @@ export function errorMessage(err: unknown, fallback = 'Đã có lỗi xảy ra, 
     if (Array.isArray(msg)) return msg.join('. ');
     if (typeof msg === 'string') return msg;
     if (!err.response) return 'Không kết nối được máy chủ';
+    // 5xx không có nội dung (API tắt sau proxy / gateway): đừng dùng câu mặc định của trang như "Không tìm thấy…" (BUG-18)
+    if (err.response.status >= 500) return 'Không kết nối được máy chủ, vui lòng thử lại sau';
   } else if (err instanceof UserError) {
     // Lỗi do chính web ném ra kèm câu tiếng Việt dành cho người dùng (vd. hồ sơ trống khi ứng tuyển 1 chạm)
     return err.message;
