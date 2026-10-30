@@ -32,3 +32,6 @@ scripts/qa-link-het-han.txt
 scripts/test-tu-dong.txt
 scripts/qa-cv-luot.txt
 scripts/qa-p2-ntd.txt
+scripts/qa-backup-restore.txt
+scripts/qa-prod-swagger.txt
+scripts/qa-prod-api.log
