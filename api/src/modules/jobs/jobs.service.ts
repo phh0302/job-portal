@@ -8,9 +8,9 @@ import { JobStatus } from '../../common/enums';
 import { StorageService } from '../storage/storage.service';
 import { SearchJobsDto } from './dto/search-jobs.dto';
 import { Job } from './entities/job.entity';
+import { aiLike, searchKeyword } from '../../common/utils/search';
 
 /** Escape ký tự đặc biệt của LIKE trong SQL Server */
-const likeEscape = (s: string) => s.replace(/[[\]%_]/g, (c) => `[${c}]`);
 
 @Injectable()
 export class JobsService {
@@ -34,14 +34,15 @@ export class JobsService {
       .leftJoinAndSelect('j.location', 'l');
 
     if (dto.q) {
-      const kw = `%${likeEscape(dto.q)}%`;
+      // Không phân biệt dấu: "ke toan" vẫn ra "Kế toán" (Q-02)
+      const kw = searchKeyword(dto.q);
       qb.andWhere(
         new Brackets((w) =>
           w
-            .where('j.title LIKE :kw', { kw })
-            .orWhere('c.name LIKE :kw')
+            .where(aiLike('j.title'), { kw })
+            .orWhere(aiLike('c.name'))
             .orWhere(
-              'EXISTS (SELECT 1 FROM job_skills js INNER JOIN skills s ON s.id = js.skill_id WHERE js.job_id = j.id AND s.name LIKE :kw)',
+              `EXISTS (SELECT 1 FROM job_skills js INNER JOIN skills s ON s.id = js.skill_id WHERE js.job_id = j.id AND ${aiLike('s.name')})`,
             ),
         ),
       );
@@ -77,7 +78,7 @@ export class JobsService {
       case 'relevant':
         if (dto.q) {
           // Khớp ở tiêu đề xếp trước
-          qb.addSelect(`CASE WHEN j.title LIKE :kw THEN 0 ELSE 1 END`, 'title_rank').orderBy('title_rank', 'ASC');
+          qb.addSelect(`CASE WHEN ${aiLike('j.title')} THEN 0 ELSE 1 END`, 'title_rank').orderBy('title_rank', 'ASC');
           qb.addOrderBy('j.published_at', 'DESC');
         } else {
           qb.orderBy('j.published_at', 'DESC');

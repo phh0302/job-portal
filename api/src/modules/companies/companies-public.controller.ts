@@ -11,6 +11,7 @@ import { JobStatus, ReviewStatus } from '../../common/enums';
 import { todayVN } from '../../common/utils/date';
 import { StorageService } from '../storage/storage.service';
 import { Company } from './entities/company.entity';
+import { aiLike, searchKeyword } from '../../common/utils/search';
 
 class CompanyQuery extends PaginationDto {
   @ApiPropertyOptional()
@@ -49,7 +50,7 @@ export class CompaniesPublicController {
       .addSelect(`(SELECT AVG(CAST(r.rating AS float)) FROM company_reviews r WHERE r.company_id = c.id AND r.status = :rv)`, 'rating_avg')
       .addSelect(`(SELECT COUNT(*) FROM company_reviews r WHERE r.company_id = c.id AND r.status = :rv)`, 'rating_count')
       .setParameters({ approved: JobStatus.APPROVED, today: todayVN(), rv: ReviewStatus.APPROVED });
-    if (q.q) qb.where('c.name LIKE :kw', { kw: `%${q.q.replace(/[[\]%_]/g, (ch) => `[${ch}]`)}%` });
+    if (q.q) qb.where(aiLike('c.name'), { kw: searchKeyword(q.q) }); // không phân biệt dấu
 
     const total = await qb.getCount();
     const { entities, raw } = await qb
