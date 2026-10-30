@@ -26,6 +26,9 @@ Kết quả chi tiết từng TC: [`job-portal-testcases.xlsx`](job-portal-testc
 | BUG-14 | [Thông báo việc làm / Đăng tin / Công ty] Để trống ô chọn ("Tất cả") làm API trả 500 | High | P1 | Fixed – đã retest | TC-CAN10-001 |
 | BUG-15 | [Xác minh email] Link hết hạn không gợi ý gửi lại link mới | Low | P3 | Fixed – đã retest | TC-AUTH03-003 |
 | BUG-16 | [Phiên] Đăng nhập tài khoản khác vẫn thấy dữ liệu đã cache của người trước (tới 60 giây) | Medium | P2 | Fixed – đã retest | TC-EMP03-012 (regression) |
+| BUG-17 | [Thông báo việc làm] Gạt tắt / bật thông báo báo lỗi 400 "Hãy nhập ít nhất từ khóa…" | Medium | P2 | Fixed – đã retest | TC-CAN10-005 |
+| BUG-18 | [Hệ thống] API tắt: trang chi tiết tin báo "Không tìm thấy tin tuyển dụng" | Low | P3 | Fixed – đã retest | TC-CAN19-021 |
+| OBS-02 | [API] Một số câu lỗi validate bằng tiếng Anh khi gọi API trực tiếp | Ghi nhận | – | Cần cân nhắc | TC-CAN01-004, TC-EMP03-002 |
 
 Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`, SQL Server 2022 trong Docker (`jobportal-sqlserver`), trình duyệt tích hợp của Claude desktop (Chromium bản mới), chưa có `ANTHROPIC_API_KEY`. Bản build khi phát hiện: `main @ 968dc5f`. Bản sửa: commit `68f5816` (BUG-01…08), retest 29/10/2026 – tất cả Pass. Ngày test: 29/10/2026. Người test: Claude.
 
@@ -222,6 +225,30 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 - **Đã sửa:** `web/src/auth/AuthContext.tsx` gọi `queryClient.clear()` khi đăng nhập/đăng ký, đăng xuất, hết phiên và bị khoá tài khoản.
 - **Retest:** chạy lại đúng chuỗi trên → /employer/jobs/new hiện ngay hướng dẫn tạo công ty; ntd1 đăng nhập lại thấy đủ 18 tin của mình.
 
+## BUG-17 – [Thông báo việc làm] Gạt tắt / bật thông báo báo lỗi 400
+
+- **Liên quan:** TC-CAN10-005 · CAN-10
+- **Mức độ / Ưu tiên:** Medium / P2 – không tạm dừng được thông báo việc làm; cách khác duy nhất là xoá.
+- **Bước tái hiện:** uv1 có thông báo "QA P2 alert" → /candidate/job-alerts → gạt công tắc "Đang bật".
+- **Thực tế (trước khi sửa):** `PATCH /api/candidate/job-alerts/:id` body `{ isActive: false }` → 400 "Hãy nhập ít nhất từ khóa, địa điểm hoặc ngành nghề"; trạng thái không đổi.
+- **Nguyên nhân:** DTO sau khi chuyển đổi có sẵn các trường `keyword/locationId/categoryId = undefined`; `updateAlert` trộn `{ ...alert, ...dto }` nên ghi đè giá trị cũ bằng `undefined` rồi báo thiếu điều kiện.
+- **Đã sửa:** `engagement.service.ts` bỏ các trường `undefined` trước khi kiểm tra và cập nhật; thêm `engagement.service.spec.ts`.
+- **Retest:** gạt tắt → "Đã tắt" (isActive false); đổi Hằng tuần, Xóa đều đúng.
+
+## BUG-18 – [Hệ thống] API tắt: trang chi tiết tin báo "Không tìm thấy tin tuyển dụng"
+
+- **Liên quan:** TC-CAN19-021
+- **Mức độ / Ưu tiên:** Low / P3
+- **Thực tế (trước khi sửa):** API ngừng (proxy trả 500 không có nội dung) → mở /jobs/<slug> báo "Không tìm thấy tin tuyển dụng", người dùng tưởng tin đã bị xoá.
+- **Đã sửa:** `web/src/lib/api.ts` – `errorMessage` trả "Không kết nối được máy chủ, vui lòng thử lại sau" cho lỗi 5xx không có nội dung, thay vì câu mặc định của từng trang.
+- **Retest:** API tắt → trang tin và cửa sổ kiểm tra CV hiện câu mới (cửa sổ có nút Thử lại); bật API, Thử lại → tải được.
+
+## OBS-02 – [API] Một số câu lỗi validate bằng tiếng Anh khi gọi API trực tiếp
+
+- **Liên quan:** TC-CAN01-004, TC-EMP03-002
+- **Hiện tượng:** `fullName` 151 ký tự → "fullName must be shorter than or equal to 150 characters"; `salaryMin: "abc"` → "salaryMin must be an integer number…". Giao diện đã chặn trước (maxlength, kiểm tra form) nên người dùng thường không gặp.
+- **Đề xuất:** thêm `message` tiếng Việt cho các decorator `MaxLength/IsInt/Min/Max` còn thiếu.
+
 ---
 
 ## Lịch sử
@@ -238,3 +265,4 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 | 30/10/2026 | BUG-13, Q-02 | P1 lượt 3 (NTD + Admin, 37 TC Pass). BUG-13 sửa + retest; Q-02 làm tìm không dấu |
 | 30/10/2026 | BUG-14, BUG-15 | P1 lượt 4 (26 TC). BUG-14 (500 khi để trống ô chọn) và BUG-15 sửa + retest Pass |
 | 30/10/2026 | BUG-16 | Regression sau lượt 4 (smoke + P0 đăng tin, công ty, duyệt tin, tìm việc, ứng tuyển) + unit/E2E Pass. BUG-16 sửa + retest; AUTH04-005 Pass |
+| 30/10/2026 | BUG-17, BUG-18, OBS-02 | P2 lượt 1 – Ứng viên + AUTH (36 TC: 33 Pass, 3 Skip AI). BUG-17, BUG-18 sửa + retest |
