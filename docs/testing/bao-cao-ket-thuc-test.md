@@ -10,7 +10,7 @@
 |---|---|
 | Thời gian | 29/10/2026 – 30/10/2026 |
 | Bản build | Bắt đầu `main @ 968dc5f`; P0/P1 kết thúc ở `main @ cc07e22` (BUG-01…16); P2 kết thúc ở nhánh `fix/qa-p2-luot1` (thêm BUG-17…20) |
-| Môi trường | Windows · web `localhost:5173` (Vite) · API `localhost:3000` · SQL Server 2022 trong Docker · trình duyệt Chromium tích hợp của Claude desktop · chưa có `ANTHROPIC_API_KEY` |
+| Môi trường | Windows · web `localhost:5173` (Vite) · API `localhost:3000` · SQL Server 2022 trong Docker · trình duyệt Chromium tích hợp của Claude desktop · AI: không có `ANTHROPIC_API_KEY`; TC AI chạy bằng Ollama `qwen2.5:7b` trên máy |
 | Loại test | Thủ công trên giao diện; phân quyền/biên/giới hạn qua API bằng token từng vai trò; responsive 360px; unit + E2E tự động; script `.cmd` cho dữ liệu cần sửa DB, sao lưu/khôi phục, chạy thử bản production |
 | Người test | Claude |
 
@@ -22,17 +22,17 @@
 |---|---|---|---|---|---|---|---|---|
 | P0 | 151 | 151 | 151 | 0 | 0 | 0 | 100% | 100% |
 | P1 | 172 | 172 | 169 | 0 | 3 | 0 | 100% | 98,3% |
-| P2 | 120 | 120 | 116 | 0 | 1 (+3 Skip) | 0 | 100% | 96,7% |
-| **Tổng** | **443** | **443** | **436** | **0** | **4 (+3 Skip)** | **0** | **100%** | **98,4%** |
+| P2 | 120 | 120 | 119 | 0 | 1 | 0 | 100% | 99,2% |
+| **Tổng** | **443** | **443** | **439** | **0** | **4** | **0** | **100%** | **99,1%** |
 
-Skip: 3 TC AI cần `ANTHROPIC_API_KEY` (CAN13-005/007/008) – bỏ qua theo quyết định PO 30/10/2026.
+3 TC AI (CAN13-005/007/008) ban đầu Skip vì chưa có `ANTHROPIC_API_KEY`; sau khi thêm chế độ AI chạy trên máy (Ollama, `qwen2.5:7b`) đã chạy lại – Pass.
 
 **Theo module**
 
 | Module | Số TC | Pass | Blocked | Skip | Fail |
 |---|---|---|---|---|---|
 | Xác thực | 44 | 44 | 0 | 0 | 0 |
-| Ứng viên | 146 | 143 | 0 | 3 | 0 |
+| Ứng viên | 146 | 146 | 0 | 0 | 0 |
 | Nhà tuyển dụng | 114 | 114 | 0 | 0 | 0 |
 | Admin | 71 | 71 | 0 | 0 | 0 |
 | Hỗ trợ (chung) | 15 | 15 | 0 | 0 | 0 |
@@ -70,7 +70,7 @@ Ghi nhận: **OBS-01** – 2 lần làm mới phiên đồng thời với cùng 
 
 ## 5. Độ phủ yêu cầu & rủi ro còn lại
 
-- **Độ phủ (RTM, 66 mã yêu cầu):** 66/66 đã chạy hết TC; 62/66 (94%) phủ toàn bộ (mọi TC Pass). 4 mã còn thiếu: CAN-13 (3 TC AI Skip), §6.2 hiệu năng (PERF-001/002 Blocked), §6.3 (REL-002 Blocked), §6.6 tương thích (COMP-001 Blocked).
+- **Độ phủ (RTM, 66 mã yêu cầu):** 66/66 đã chạy hết TC; 63/66 (95%) phủ toàn bộ (mọi TC Pass). 3 mã còn thiếu: §6.2 hiệu năng (PERF-001/002 Blocked), §6.3 (REL-002 Blocked), §6.6 tương thích (COMP-001 Blocked).
 - **Rủi ro còn lại:**
   - TC-PERF-001 (p95 < 500 ms với 50.000 tin) chưa đo – cần script sinh dữ liệu + k6. Rủi ro: chậm khi dữ liệu lớn.
   - TC-REL-002 (gửi lại email lỗi) chưa thử với SMTP sai – cơ chế đã có unit test `mail-queue.worker.spec`.
@@ -78,7 +78,7 @@ Ghi nhận: **OBS-01** – 2 lần làm mới phiên đồng thời với cùng 
   - TC-PERF-002 (LCP < 2,5 s) chưa đo – cần build production web + API và chạy Lighthouse.
   - OBS-01 – nên sửa nếu yêu cầu bảo mật phiên chặt.
   - OBS-02 – câu lỗi API tiếng Anh, chỉ ảnh hưởng khi gọi API trực tiếp.
-  - Tính năng AI (nhận xét gợi ý, kiểm tra CV, chấm CV, trợ lý hỗ trợ) chỉ test chế độ không có API key (so khớp từ khoá / FAQ); 3 TC cần key đã Skip.
+  - Tính năng AI đã test ở 2 chế độ: không AI (so khớp từ khoá / FAQ) và AI trên máy (Ollama `qwen2.5:7b`). Chưa test với Claude (không có key). Với Ollama chỉ dùng CPU: mỗi lần trả lời 45–140 giây, chất lượng tiếng Việt kém Claude (lý do lặp lại, đôi khi hiểu sai chức danh) – nên dùng GPU hoặc Claude khi chạy thật; khi quá hạn hệ thống tự quay về so khớp từ khoá.
 
 ## 6. Bài học
 
