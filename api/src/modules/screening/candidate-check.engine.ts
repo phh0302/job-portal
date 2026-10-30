@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ScreeningVerdict } from '../../common/enums';
 import type { RequirementCheck } from './entities/cv-screening.entity';
 import { parseAiResult, rulesScreen, type CandidateBrief, type CvContent, type JobBrief } from './screening.engine';
-import { AiClient, type AiContentBlock } from '../../common/ai/ai-client';
+import { AiClient, LOCAL_CV_MAX_CHARS, type AiContentBlock } from '../../common/ai/ai-client';
 
 export type Priority = 'HIGH' | 'MEDIUM' | 'LOW';
 
@@ -69,7 +69,8 @@ export function parseCandidateResult(text: string): CandidateCheckResult | null 
   const base = parseAiResult(text, '');
   if (!base) return null;
   const raw = JSON.parse(text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1)) as Record<string, unknown>;
-  const str = (v: unknown, n: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : null);
+  // Mô hình nhỏ đôi khi trả chuỗi "null" thay cho null
+  const str = (v: unknown, n: number) => (typeof v === 'string' && v.trim() && !/^(null|undefined|none)$/i.test(v.trim()) ? v.trim().slice(0, n) : null);
   const list = (v: unknown, max: number, n = 300) => (Array.isArray(v) ? v.map((x) => str(x, n)).filter((x): x is string => !!x).slice(0, max) : []);
   const improvements = (Array.isArray(raw.improvements) ? raw.improvements : [])
     .map((i: { area?: unknown; priority?: unknown; suggestion?: unknown }) => ({
@@ -141,12 +142,18 @@ export class AiCandidateChecker {
   }
 
   async check(job: JobBrief, c: CandidateBrief, cv: CvContent): Promise<CandidateCheckResult | null> {
-    // Mô hình trên máy (Ollama) không đọc được PDF → gửi nội dung chữ đã trích từ PDF
-    const input: CvContent = cv.kind === 'pdf' && !this.ai.supportsPdf ? (cv.text.trim() ? { kind: 'text', text: cv.text } : { kind: 'none' }) : cv;
+    const input: CvContent = this.ai.supportsPdf ? cv : localCv(cv);
     const content: AiContentBlock[] = [];
     if (input.kind === 'pdf') content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: input.base64 } });
     content.push({ type: 'text', text: buildCandidatePrompt(job, c, input) });
     const text = await this.ai.complete({ messages: [{ role: 'user', content }], maxTokens: 2500, timeoutMs: 60_000, json: true });
     return parseCandidateResult(text);
   }
+}
+
+/** Mô hình trên máy (Ollama): không đọc được PDF → dùng chữ đã trích; cắt ngắn để chạy kịp trên CPU */
+function localCv(cv: CvContent): CvContent {
+  if (cv.kind === 'none') return cv;
+  const text = cv.text.trim().slice(0, LOCAL_CV_MAX_CHARS);
+  return text ? { kind: 'text', text } : { kind: 'none' };
 }

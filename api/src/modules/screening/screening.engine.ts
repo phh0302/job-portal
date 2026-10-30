@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ScreeningVerdict } from '../../common/enums';
 import { normalizeVi } from '../support/faq-search';
 import type { RequirementCheck, RequirementStatus } from './entities/cv-screening.entity';
-import { AiClient, type AiContentBlock } from '../../common/ai/ai-client';
+import { AiClient, LOCAL_CV_MAX_CHARS, type AiContentBlock } from '../../common/ai/ai-client';
 
 /** Yêu cầu của tin tuyển dụng (gửi cho AI) */
 export interface JobBrief {
@@ -190,7 +190,8 @@ export function parseAiResult(text: string, model: string): ScreeningResult | nu
   } catch {
     return null;
   }
-  const str = (v: unknown, n: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : null);
+  // Mô hình nhỏ đôi khi trả chuỗi "null" thay cho null
+  const str = (v: unknown, n: number) => (typeof v === 'string' && v.trim() && !/^(null|undefined|none)$/i.test(v.trim()) ? v.trim().slice(0, n) : null);
   const list = (v: unknown, max: number, n = 300) => (Array.isArray(v) ? v.map((x) => str(x, n)).filter((x): x is string => !!x).slice(0, max) : []);
   const score = Math.max(0, Math.min(100, Math.round(Number(raw.score))));
   if (!Number.isFinite(score)) return null;
@@ -236,12 +237,18 @@ export class AiCvScreener {
   }
 
   async screen(job: JobBrief, c: CandidateBrief, cv: CvContent): Promise<ScreeningResult | null> {
-    // Mô hình trên máy (Ollama) không đọc được PDF → gửi nội dung chữ đã trích từ PDF
-    const input: CvContent = cv.kind === 'pdf' && !this.ai.supportsPdf ? (cv.text.trim() ? { kind: 'text', text: cv.text } : { kind: 'none' }) : cv;
+    const input: CvContent = this.ai.supportsPdf ? cv : localCv(cv);
     const content: AiContentBlock[] = [];
     if (input.kind === 'pdf') content.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: input.base64 } });
     content.push({ type: 'text', text: buildPrompt(job, c, input) });
     const text = await this.ai.complete({ messages: [{ role: 'user', content }], maxTokens: 2000, timeoutMs: TIMEOUT_MS, json: true });
     return parseAiResult(text, this.model);
   }
+}
+
+/** Mô hình trên máy (Ollama): không đọc được PDF → dùng chữ đã trích; cắt ngắn để chạy kịp trên CPU */
+function localCv(cv: CvContent): CvContent {
+  if (cv.kind === 'none') return cv;
+  const text = cv.text.trim().slice(0, LOCAL_CV_MAX_CHARS);
+  return text ? { kind: 'text', text } : { kind: 'none' };
 }

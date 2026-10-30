@@ -31,8 +31,10 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const DEFAULT_CLAUDE_MODEL = 'claude-haiku-5-5';
 const DEFAULT_OLLAMA_URL = 'http://localhost:11434';
 const DEFAULT_OLLAMA_MODEL = 'qwen2.5:7b';
-/** Mô hình chạy trên máy chậm hơn nhiều so với API → cho thời gian chờ tối thiểu dài hơn */
-const OLLAMA_MIN_TIMEOUT_MS = 120_000;
+/** Mô hình chạy trên máy chậm hơn nhiều so với API (nhất là khi chỉ có CPU) → thời gian chờ mặc định dài hơn */
+const DEFAULT_OLLAMA_TIMEOUT_MS = 300_000;
+/** Độ dài tối đa nội dung CV gửi cho mô hình trên máy (prompt dài làm CPU xử lý rất chậm) */
+export const LOCAL_CV_MAX_CHARS = 8_000;
 
 export class AiClient {
   constructor(private readonly config: Pick<ConfigService, 'get'>) {}
@@ -104,7 +106,7 @@ export class AiClient {
         options: { num_predict: req.maxTokens, temperature: 0.3 },
         keep_alive: '10m',
       },
-      Math.max(req.timeoutMs, OLLAMA_MIN_TIMEOUT_MS),
+      Math.max(req.timeoutMs, Number(this.config.get<string>('ai.ollamaTimeoutMs')) || DEFAULT_OLLAMA_TIMEOUT_MS),
     );
     return ((body as { message?: { content?: string } }).message?.content ?? '').trim();
   }

@@ -46,6 +46,11 @@ describe('Ứng viên kiểm tra CV với JD', () => {
     expect(r.missingKeywords).toEqual(['GraphQL', 'Docker']);
   });
 
+  it('parseCandidateResult: chuỗi "null" từ mô hình nhỏ được hiểu là không có dẫn chứng', () => {
+    const r = parseCandidateResult(JSON.stringify({ score: 70, verdict: 'POTENTIAL', summary: 'ok', requirements: [{ requirement: 'React', status: 'MET', evidence: 'null' }] }));
+    expect(r?.requirements[0].evidence).toBeNull();
+  });
+
   it('parseCandidateResult: trả null khi AI không trả JSON', () => {
     expect(parseCandidateResult('Xin lỗi, tôi không thể')).toBeNull();
   });

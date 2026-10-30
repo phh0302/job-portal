@@ -41,6 +41,8 @@ export default () => {
       /** Mô hình chạy trên máy bằng Ollama (miễn phí, không cần key) */
       ollamaUrl: process.env.OLLAMA_URL || 'http://localhost:11434',
       ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5:7b',
+      /** Thời gian chờ tối đa mỗi lần gọi mô hình trên máy (ms) */
+      ollamaTimeoutMs: parseInt(process.env.OLLAMA_TIMEOUT_MS ?? '300000', 10),
     },
     upload: {
       dir: process.env.UPLOAD_DIR ?? 'uploads',
