@@ -20,7 +20,8 @@ Kết quả chi tiết từng TC: [`job-portal-testcases.xlsx`](job-portal-testc
 | BUG-11 | [Hệ thống] Body request quá 1MB trả 500 thay vì 413, không có X-Request-Id | Medium | P2 | Fixed – đã retest | TC-SEC-008 |
 | OBS-01 | [Phiên] 2 lần làm mới phiên gửi đồng thời với cùng refresh token đều thành công | Ghi nhận | – | Cần cân nhắc | TC-AUTH06-001 |
 | BUG-12 | [Hồ sơ] API nhận ngày sinh ở tương lai (web chặn nhưng API không) | Low | P3 | Fixed – đã retest | TC-CAN01-005 |
-| Q-02 | [Tìm việc] Chưa hỗ trợ tìm không dấu ("ke toan" không ra "Kế toán") | Câu hỏi PO | – | Cần quyết định | TC-CAN05-003 |
+| Q-02 | [Tìm việc] Chưa hỗ trợ tìm không dấu ("ke toan" không ra "Kế toán") | Câu hỏi PO | – | Đã làm – tìm không dấu (retest Pass) | TC-CAN05-003 |
+| BUG-13 | [Tải file] File quá dung lượng chỉ báo câu chung, không nêu giới hạn | Low | P3 | Fixed – đã retest | TC-CAN01-007, TC-EMP01-007 |
 | Q-01 | [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ | Câu hỏi PO | – | Đã chốt: không ẩn (đúng thiết kế) | TC-EMP14-010 |
 
 Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`, SQL Server 2022 trong Docker (`jobportal-sqlserver`), trình duyệt tích hợp của Claude desktop (Chromium bản mới), chưa có `ANTHROPIC_API_KEY`. Bản build khi phát hiện: `main @ 968dc5f`. Bản sửa: commit `68f5816` (BUG-01…08), retest 29/10/2026 – tất cả Pass. Ngày test: 29/10/2026. Người test: Claude.
@@ -173,7 +174,15 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 
 - **Liên quan:** TC-CAN05-003 · CAN-05
 - **Hiện tại:** tìm "ke toan" → 0 kết quả; "kế toán" → có tin. TC ghi "nếu không hỗ trợ, ghi nhận để PO quyết định".
-- **Câu hỏi:** có cần hỗ trợ tìm không dấu không? Người dùng Việt hay gõ không dấu trên điện thoại. Nếu cần: thêm cột tiêu đề/kỹ năng đã bỏ dấu (hoặc collation `Vietnamese_CI_AI` cho cột tìm kiếm) và bỏ dấu từ khoá trước khi so khớp.
+- **Quyết định (30/10/2026, PO):** làm. Đã thêm `api/src/common/utils/search.ts` (`aiLike` + `searchKeyword`: collation `Latin1_General_100_CI_AI`, đổi đ→d) cho tìm việc (tiêu đề, công ty, kỹ năng) và tìm công ty. Retest: "ke toan", "KE TOAN", "phuong nam", "lap trinh" đều ra kết quả; ký tự đặc biệt vẫn được escape.
+- **Câu hỏi ban đầu:** có cần hỗ trợ tìm không dấu không? Người dùng Việt hay gõ không dấu trên điện thoại. Nếu cần: thêm cột tiêu đề/kỹ năng đã bỏ dấu (hoặc collation `Vietnamese_CI_AI` cho cột tìm kiếm) và bỏ dấu từ khoá trước khi so khớp.
+
+## BUG-13 – [Tải file] File quá dung lượng chỉ báo câu chung, không nêu giới hạn
+
+- **Liên quan:** TC-CAN01-007, TC-EMP01-007, TC-EMP02-003
+- **Mức độ / Ưu tiên:** Low / P3
+- **Thực tế (trước khi sửa):** ảnh đại diện 2,1MB, logo 2,1MB, ảnh bìa 3,1MB → 413 "Dữ liệu / file vượt quá dung lượng cho phép" – người dùng không biết giới hạn là bao nhiêu.
+- **Đã sửa:** `api/src/common/upload.ts` – interceptor tải file dùng chung đổi lỗi vượt dung lượng thành "File tối đa {n}MB"; `AllExceptionsFilter` giữ nguyên câu tiếng Việt cụ thể cho 413. Retest: ảnh đại diện / logo "File tối đa 2MB", ảnh bìa "File tối đa 3MB", giấy phép "File tối đa 5MB".
 
 ## Q-01 – [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ
 
@@ -195,3 +204,4 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 | 29/10/2026 | BUG-10 | PO giữ hành vi hiện tại → Closed (đúng thiết kế); sửa TC-EMP03-002 |
 | 29/10/2026 | BUG-11, OBS-01 | P1 lượt 1 (bảo mật & quy tắc trạng thái, 22 TC Pass). BUG-11 sửa + retest; OBS-01 ghi nhận |
 | 29/10/2026 | BUG-12, Q-02 | P1 lượt 2 (Ứng viên, 31 TC Pass). BUG-12 sửa + retest; Q-02 chờ PO |
+| 30/10/2026 | BUG-13, Q-02 | P1 lượt 3 (NTD + Admin, 37 TC Pass). BUG-13 sửa + retest; Q-02 làm tìm không dấu |

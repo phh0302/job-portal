@@ -22,3 +22,9 @@ scripts/e2e-ket-qua.txt
 ngrok.exe
 *.tsbuildinfo
 api/test/fixtures/cv/*.tgz
+
+# Kết quả tạm của các script QA (có thể chứa token / thông tin máy)
+scripts/email-links.txt
+scripts/kiem-tra-db.txt
+scripts/cors-ket-qua.txt
+scripts/qa-tin-het-han.txt
