@@ -37,6 +37,35 @@ describe('SupportBotService (không có API key)', () => {
     expect(r.handoff).toBe(false);
   });
 
+  it('câu hỏi mới khác chủ đề không bị trả lời bằng FAQ của câu trước (BUG-19)', async () => {
+    const r = await bot.reply(
+      1,
+      UserRole.CANDIDATE,
+      [
+        { role: 'user', text: 'quên mật khẩu' },
+        { role: 'assistant', text: 'Bấm "Quên mật khẩu"…' },
+        { role: 'user', text: 'Công ty ABC có cho làm từ xa không?' },
+      ],
+      FAQS,
+    );
+    expect(r.faqIds).not.toContain(1);
+    expect(r.text).toContain('Gặp nhân viên');
+  });
+
+  it('câu hỏi nối tiếp ngắn vẫn dùng ngữ cảnh câu trước', async () => {
+    const r = await bot.reply(
+      1,
+      UserRole.CANDIDATE,
+      [
+        { role: 'user', text: 'quên mật khẩu' },
+        { role: 'assistant', text: 'Bấm "Quên mật khẩu"…' },
+        { role: 'user', text: 'đặt lại thế nào?' },
+      ],
+      FAQS,
+    );
+    expect(r.faqIds[0]).toBe(1);
+  });
+
   it('không khớp → xin mô tả thêm / gợi ý gặp nhân viên', async () => {
     const r = await bot.reply(1, UserRole.EMPLOYER, [{ role: 'user', text: 'xyz abc' }], FAQS);
     expect(r.text).toContain('Gặp nhân viên');

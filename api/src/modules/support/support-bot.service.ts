@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserRole } from '../../common/enums';
-import { searchFaqs, type FaqLike } from './faq-search';
+import { normalizeVi, searchFaqs, type FaqLike } from './faq-search';
 
 export interface BotTurn {
   role: 'user' | 'assistant';
@@ -20,6 +20,8 @@ const TIMEOUT_MS = 20_000;
 const HANDOFF = '[[CHUYEN_NHAN_VIEN]]';
 /** Ngưỡng điểm để tự trả lời bằng FAQ khi không có AI */
 const FAQ_THRESHOLD = 0.5;
+/** Câu hỏi từ chừng này từ trở xuống được coi là hỏi nối tiếp câu trước */
+const FOLLOW_UP_MAX_WORDS = 5;
 const AI_PER_USER_PER_HOUR = 30;
 
 /**
@@ -41,10 +43,15 @@ export class SupportBotService {
 
   async reply(userId: number, role: UserRole, history: BotTurn[], faqs: FaqLike[]): Promise<BotReply> {
     const lastUser = [...history].reverse().find((t) => t.role === 'user')?.text ?? '';
-    // Tìm theo câu hỏi mới nhất + câu trước đó (câu hỏi nối tiếp thường ngắn)
+    // Ưu tiên câu hỏi mới nhất. Chỉ ghép thêm câu trước khi câu mới ngắn (hỏi nối tiếp, vd. "còn qua email thì sao?")
+    // và tự nó chưa khớp FAQ nào đủ chắc – tránh trả lời lại chủ đề cũ cho câu hỏi khác hẳn (BUG-19)
     const userTurns = history.filter((t) => t.role === 'user').slice(-2).map((t) => t.text).join(' ');
-    const matches = searchFaqs(userTurns, faqs, 5);
-    if (!matches.length) matches.push(...searchFaqs(lastUser, faqs, 5));
+    let matches = searchFaqs(lastUser, faqs, 5);
+    const isShortFollowUp = normalizeVi(lastUser).split(' ').filter(Boolean).length <= FOLLOW_UP_MAX_WORDS;
+    if ((matches[0]?.score ?? 0) < FAQ_THRESHOLD && isShortFollowUp) {
+      const combined = searchFaqs(userTurns, faqs, 5);
+      if (combined.length) matches = combined;
+    }
 
     if (this.aiEnabled && this.allow(userId)) {
       try {

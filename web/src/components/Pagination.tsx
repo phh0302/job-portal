@@ -15,8 +15,8 @@ export default function Pagination({
   }
   const btn = 'min-w-9 rounded-lg border px-3 py-1.5 text-sm';
   return (
-    <nav className="mt-6 flex flex-wrap items-center justify-center gap-1">
-      <button className={`${btn} border-slate-300 disabled:opacity-40`} disabled={page <= 1} onClick={() => onChange(page - 1)}>
+    <nav aria-label="Phân trang" className="mt-6 flex flex-wrap items-center justify-center gap-1">
+      <button className={`${btn} border-slate-300 disabled:opacity-40`} aria-label="Trang trước" disabled={page <= 1} onClick={() => onChange(page - 1)}>
         ‹
       </button>
       {pages.map((p, i) =>
@@ -26,13 +26,15 @@ export default function Pagination({
           <button
             key={p}
             onClick={() => onChange(p)}
+            aria-label={`Trang ${p}`}
+            aria-current={p === page ? 'page' : undefined}
             className={`${btn} ${p === page ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 hover:bg-slate-50'}`}
           >
             {p}
           </button>
         ),
       )}
-      <button className={`${btn} border-slate-300 disabled:opacity-40`} disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
+      <button className={`${btn} border-slate-300 disabled:opacity-40`} aria-label="Trang sau" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
         ›
       </button>
     </nav>
