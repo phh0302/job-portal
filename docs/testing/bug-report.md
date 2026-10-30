@@ -25,6 +25,7 @@ Kết quả chi tiết từng TC: [`job-portal-testcases.xlsx`](job-portal-testc
 | Q-01 | [Tìm hồ sơ] Ngày sinh ứng viên hiện cho NTD trước khi mở liên hệ | Câu hỏi PO | – | Đã chốt: không ẩn (đúng thiết kế) | TC-EMP14-010 |
 | BUG-14 | [Thông báo việc làm / Đăng tin / Công ty] Để trống ô chọn ("Tất cả") làm API trả 500 | High | P1 | Fixed – đã retest | TC-CAN10-001 |
 | BUG-15 | [Xác minh email] Link hết hạn không gợi ý gửi lại link mới | Low | P3 | Fixed – đã retest | TC-AUTH03-003 |
+| BUG-16 | [Phiên] Đăng nhập tài khoản khác vẫn thấy dữ liệu đã cache của người trước (tới 60 giây) | Medium | P2 | Fixed – đã retest | TC-EMP03-012 (regression) |
 
 Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`, SQL Server 2022 trong Docker (`jobportal-sqlserver`), trình duyệt tích hợp của Claude desktop (Chromium bản mới), chưa có `ANTHROPIC_API_KEY`. Bản build khi phát hiện: `main @ 968dc5f`. Bản sửa: commit `68f5816` (BUG-01…08), retest 29/10/2026 – tất cả Pass. Ngày test: 29/10/2026. Người test: Claude.
 
@@ -211,6 +212,16 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 - **Đã sửa:** `web/src/pages/auth/VerifyEmailPage.tsx` – khi lỗi: chưa đăng nhập → "Đăng nhập để gửi lại link xác minh mới."; đã đăng nhập mà chưa xác minh → nút "Gửi lại link xác minh" (gọi `/auth/resend-verification`).
 - **Retest:** khách thấy câu gợi ý; qa.ntd11 bấm nút → "Đã gửi lại email xác minh", email mới #20005 trong /admin/emails.
 
+## BUG-16 – [Phiên] Đăng nhập tài khoản khác vẫn thấy dữ liệu đã cache của người trước
+
+- **Liên quan:** TC-EMP03-012 (phát hiện khi chạy regression), AUTH-02
+- **Mức độ / Ưu tiên:** Medium / P2 – trên máy dùng chung, người đăng nhập sau có thể thấy dữ liệu của người trước; giao diện hiện sai trạng thái.
+- **Bước tái hiện:** ntd1 đăng nhập, mở /employer/jobs → đăng xuất → trong vòng 60 giây đăng nhập qa.ntd13 (NTD mới, chưa có công ty) → mở /employer/jobs/new.
+- **Thực tế (trước khi sửa):** hiện form đăng tin như đã có công ty (dữ liệu `/employer/me` của ntd1 còn trong cache react-query, `staleTime` 60 giây nên không tải lại). Mong đợi: hướng dẫn "Hãy tạo hồ sơ công ty để bắt đầu đăng tin tuyển dụng."
+- **Nguyên nhân:** `AuthContext` không xoá cache của `queryClient` khi đổi người dùng.
+- **Đã sửa:** `web/src/auth/AuthContext.tsx` gọi `queryClient.clear()` khi đăng nhập/đăng ký, đăng xuất, hết phiên và bị khoá tài khoản.
+- **Retest:** chạy lại đúng chuỗi trên → /employer/jobs/new hiện ngay hướng dẫn tạo công ty; ntd1 đăng nhập lại thấy đủ 18 tin của mình.
+
 ---
 
 ## Lịch sử
@@ -226,3 +237,4 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 | 29/10/2026 | BUG-12, Q-02 | P1 lượt 2 (Ứng viên, 31 TC Pass). BUG-12 sửa + retest; Q-02 chờ PO |
 | 30/10/2026 | BUG-13, Q-02 | P1 lượt 3 (NTD + Admin, 37 TC Pass). BUG-13 sửa + retest; Q-02 làm tìm không dấu |
 | 30/10/2026 | BUG-14, BUG-15 | P1 lượt 4 (26 TC). BUG-14 (500 khi để trống ô chọn) và BUG-15 sửa + retest Pass |
+| 30/10/2026 | BUG-16 | Regression sau lượt 4 (smoke + P0 đăng tin, công ty, duyệt tin, tìm việc, ứng tuyển) + unit/E2E Pass. BUG-16 sửa + retest; AUTH04-005 Pass |
