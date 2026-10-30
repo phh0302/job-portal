@@ -28,7 +28,9 @@ Kết quả chi tiết từng TC: [`job-portal-testcases.xlsx`](job-portal-testc
 | BUG-16 | [Phiên] Đăng nhập tài khoản khác vẫn thấy dữ liệu đã cache của người trước (tới 60 giây) | Medium | P2 | Fixed – đã retest | TC-EMP03-012 (regression) |
 | BUG-17 | [Thông báo việc làm] Gạt tắt / bật thông báo báo lỗi 400 "Hãy nhập ít nhất từ khóa…" | Medium | P2 | Fixed – đã retest | TC-CAN10-005 |
 | BUG-18 | [Hệ thống] API tắt: trang chi tiết tin báo "Không tìm thấy tin tuyển dụng" | Low | P3 | Fixed – đã retest | TC-CAN19-021 |
-| OBS-02 | [API] Một số câu lỗi validate bằng tiếng Anh khi gọi API trực tiếp | Ghi nhận | – | Cần cân nhắc | TC-CAN01-004, TC-EMP03-002 |
+| BUG-19 | [Hỗ trợ] Trợ lý trả lời câu hỏi mới bằng FAQ của câu hỏi cũ trong cùng cuộc | Medium | P2 | Fixed – đã retest | TC-ALL01-005 |
+| BUG-20 | [Giao diện] Nút ‹ › phân trang không có nhãn cho trình đọc màn hình | Low | P3 | Fixed – đã retest | TC-UI-005 |
+| OBS-02 | [API] Một số câu lỗi validate bằng tiếng Anh khi gọi API trực tiếp | Ghi nhận | – | Cần cân nhắc | TC-CAN01-004, TC-EMP03-002, TC-EMP07-004, TC-PERF-003 |
 
 Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`, SQL Server 2022 trong Docker (`jobportal-sqlserver`), trình duyệt tích hợp của Claude desktop (Chromium bản mới), chưa có `ANTHROPIC_API_KEY`. Bản build khi phát hiện: `main @ 968dc5f`. Bản sửa: commit `68f5816` (BUG-01…08), retest 29/10/2026 – tất cả Pass. Ngày test: 29/10/2026. Người test: Claude.
 
@@ -249,6 +251,24 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 - **Hiện tượng:** `message` 3001 ký tự khi đổi trạng thái đơn → "message must be shorter than or equal to 3000 characters"; `fullName` 151 ký tự → "fullName must be shorter than or equal to 150 characters"; `salaryMin: "abc"` → "salaryMin must be an integer number…". Giao diện đã chặn trước (maxlength, kiểm tra form) nên người dùng thường không gặp.
 - **Đề xuất:** thêm `message` tiếng Việt cho các decorator `MaxLength/IsInt/Min/Max` còn thiếu.
 
+## BUG-19 – [Hỗ trợ] Trợ lý trả lời câu hỏi mới bằng FAQ của câu hỏi cũ trong cùng cuộc
+
+- **Liên quan:** TC-ALL01-005 · ALL-01
+- **Mức độ / Ưu tiên:** Medium / P2 – người dùng nhận câu trả lời sai chủ đề, dễ hiểu nhầm là đã được giải đáp.
+- **Bước tái hiện:** uv1 có cuộc hỗ trợ từng hỏi "Làm sao đổi mật khẩu?" (vài giờ trước) → hỏi "Công ty ABC có cho làm từ xa không?".
+- **Thực tế (trước khi sửa):** trợ lý trả lại nguyên FAQ "Đổi mật khẩu". Mong đợi: báo chưa có câu trả lời và gợi ý "Gặp nhân viên".
+- **Nguyên nhân:** `SupportBotService.reply` luôn ghép 2 câu hỏi gần nhất để tìm FAQ (hỗ trợ câu hỏi nối tiếp); từ khoá của câu cũ ("đổi mật khẩu") đủ điểm vượt ngưỡng.
+- **Đã sửa:** ưu tiên câu hỏi mới nhất; chỉ ghép câu trước khi câu mới ngắn (≤ 5 từ) và tự nó chưa khớp FAQ đủ chắc. Thêm 2 unit test (khác chủ đề / hỏi nối tiếp ngắn).
+- **Retest:** cùng câu hỏi → "Mình chưa chắc đã hiểu đúng câu hỏi…" + gợi ý "Gặp nhân viên".
+
+## BUG-20 – [Giao diện] Nút ‹ › phân trang không có nhãn cho trình đọc màn hình
+
+- **Liên quan:** TC-UI-005 · §6.4
+- **Mức độ / Ưu tiên:** Low / P3
+- **Thực tế (trước khi sửa):** nút trang trước/sau chỉ có ký tự "‹" "›", không có `aria-label`; trình đọc màn hình đọc ký hiệu.
+- **Đã sửa:** `web/src/components/Pagination.tsx` – `nav aria-label="Phân trang"`, nút "Trang trước" / "Trang sau", số trang "Trang n" + `aria-current="page"`.
+- **Retest:** quét các trang /, /jobs, /admin, /admin/support, /admin/reviews, trang công ty – không còn nút/link biểu tượng thiếu nhãn.
+
 ---
 
 ## Lịch sử
@@ -267,3 +287,4 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 | 30/10/2026 | BUG-16 | Regression sau lượt 4 (smoke + P0 đăng tin, công ty, duyệt tin, tìm việc, ứng tuyển) + unit/E2E Pass. BUG-16 sửa + retest; AUTH04-005 Pass |
 | 30/10/2026 | BUG-17, BUG-18, OBS-02 | P2 lượt 1 – Ứng viên + AUTH (36 TC: 33 Pass, 3 Skip AI). BUG-17, BUG-18 sửa + retest |
 | 30/10/2026 | – | P2 lượt 2 – Nhà tuyển dụng (40/40 Pass), không có lỗi mới; OBS-02 thêm trường hợp lời nhắn đổi trạng thái |
+| 30/10/2026 | BUG-19, BUG-20 | P2 lượt 3 – Admin + Hỗ trợ + Phi chức năng (44 TC: 43 Pass, 1 Blocked). BUG-19, BUG-20 sửa + retest. Kết thúc chạy P2 |
