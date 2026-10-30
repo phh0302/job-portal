@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { toast } from '../components/Toast';
 import { api, refreshAccessToken, setAccessToken, setOnAccountLocked, setOnSessionExpired } from '../lib/api';
+import { queryClient } from '../lib/queryClient';
 import type { AuthResponse, User, UserRole } from './types';
 
 export interface RegisterInput {
@@ -22,6 +23,9 @@ export interface AuthContextValue {
   sessionNotice: string | null;
 }
 
+/** Xoá dữ liệu đã cache của phiên trước để người đăng nhập sau không thấy dữ liệu của người trước (BUG-16) */
+const clearUserCache = () => queryClient.clear();
+
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -33,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const applyAuth = useCallback((data: AuthResponse) => {
     setSessionNotice(null);
     lockNotified.current = false;
+    clearUserCache();
     setAccessToken(data.accessToken);
     setUser(data.user);
     return data.user;
@@ -40,13 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Khôi phục phiên từ cookie refresh token khi tải trang
   useEffect(() => {
-    setOnSessionExpired(() => setUser(null));
+    setOnSessionExpired(() => {
+      clearUserCache();
+      setUser(null);
+    });
     // Admin khoá tài khoản trong lúc đang dùng -> đăng xuất ở web, báo 1 lần (nhiều request lỗi cùng lúc)
     setOnAccountLocked((message) => {
       if (!lockNotified.current) {
         lockNotified.current = true;
         toast(message, 'error');
       }
+      clearUserCache();
       setUser(null);
       setSessionNotice(message);
     });
@@ -78,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.post('/auth/logout');
     } finally {
+      clearUserCache();
       setAccessToken(null);
       setUser(null);
     }
