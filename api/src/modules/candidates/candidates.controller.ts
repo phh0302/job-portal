@@ -12,7 +12,6 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -29,10 +28,8 @@ import {
   UpdateProfileDto,
   UpdateSkillsDto,
 } from './dto/candidate.dto';
+import { upload } from '../../common/upload';
 
-/** multer mặc định lưu file trong bộ nhớ (buffer) khi không cấu hình storage/dest */
-const upload = (maxMb: number) =>
-  FileInterceptor('file', { limits: { fileSize: maxMb * 1024 * 1024 + 1, files: 1 } });
 const FILE_BODY = { schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } };
 
 @ApiTags('candidate')

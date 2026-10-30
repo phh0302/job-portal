@@ -12,7 +12,6 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
@@ -30,9 +29,8 @@ import { ApplicationNoteDto, EmployerApplicationsQuery, UpdateApplicationStatusD
 import { CompanyDto, EmployerProfileDto, UpdateCompanyDto } from './dto/company.dto';
 import { ExtendJobDto, JobDto, MyJobsQuery, UpdateJobDto } from './dto/job.dto';
 import { EmployerJobsService } from './jobs.service';
+import { upload } from '../../common/upload';
 
-/** multer mặc định giữ file trong bộ nhớ */
-const upload = (maxMb: number) => FileInterceptor('file', { limits: { fileSize: maxMb * 1024 * 1024 + 1, files: 1 } });
 const FILE_BODY = { schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } };
 
 class CandidateSearchQuery extends PaginationDto {

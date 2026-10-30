@@ -34,7 +34,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       // Mã lỗi máy đọc được (vd. ACCOUNT_LOCKED) để web xử lý riêng
       const c = typeof body === 'object' ? (body as { code?: unknown }).code : undefined;
       if (typeof c === 'string') code = c;
-      if (status === HttpStatus.PAYLOAD_TOO_LARGE)
+      // Giữ câu tiếng Việt cụ thể (vd. "File tối đa 2MB"); chỉ thay câu mặc định tiếng Anh
+      if (status === HttpStatus.PAYLOAD_TOO_LARGE && (typeof message !== 'string' || /too large/i.test(message)))
         message = 'Dữ liệu / file vượt quá dung lượng cho phép';
     } else if (isClientHttpError(exception)) {
       // Lỗi 4xx do middleware Express ném ra (vd. body-parser: body quá 1MB -> 413) – không phải HttpException của Nest
