@@ -245,8 +245,8 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 
 ## OBS-02 – [API] Một số câu lỗi validate bằng tiếng Anh khi gọi API trực tiếp
 
-- **Liên quan:** TC-CAN01-004, TC-EMP03-002
-- **Hiện tượng:** `fullName` 151 ký tự → "fullName must be shorter than or equal to 150 characters"; `salaryMin: "abc"` → "salaryMin must be an integer number…". Giao diện đã chặn trước (maxlength, kiểm tra form) nên người dùng thường không gặp.
+- **Liên quan:** TC-CAN01-004, TC-EMP03-002, TC-EMP07-004
+- **Hiện tượng:** `message` 3001 ký tự khi đổi trạng thái đơn → "message must be shorter than or equal to 3000 characters"; `fullName` 151 ký tự → "fullName must be shorter than or equal to 150 characters"; `salaryMin: "abc"` → "salaryMin must be an integer number…". Giao diện đã chặn trước (maxlength, kiểm tra form) nên người dùng thường không gặp.
 - **Đề xuất:** thêm `message` tiếng Việt cho các decorator `MaxLength/IsInt/Min/Max` còn thiếu.
 
 ---
@@ -266,3 +266,4 @@ Môi trường chung: Windows, web `localhost:5173` (Vite), API `localhost:3000`
 | 30/10/2026 | BUG-14, BUG-15 | P1 lượt 4 (26 TC). BUG-14 (500 khi để trống ô chọn) và BUG-15 sửa + retest Pass |
 | 30/10/2026 | BUG-16 | Regression sau lượt 4 (smoke + P0 đăng tin, công ty, duyệt tin, tìm việc, ứng tuyển) + unit/E2E Pass. BUG-16 sửa + retest; AUTH04-005 Pass |
 | 30/10/2026 | BUG-17, BUG-18, OBS-02 | P2 lượt 1 – Ứng viên + AUTH (36 TC: 33 Pass, 3 Skip AI). BUG-17, BUG-18 sửa + retest |
+| 30/10/2026 | – | P2 lượt 2 – Nhà tuyển dụng (40/40 Pass), không có lỗi mới; OBS-02 thêm trường hợp lời nhắn đổi trạng thái |
